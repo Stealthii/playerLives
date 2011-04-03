@@ -6,6 +6,9 @@ http://www.pathogenstudios.com/
 Special thanks to msm595 for his NoDrop plugin as it saved me a lot of time with figuring out stuff in Bukkit.
 (And it is loosly based on it.)
 https://github.com/msm595/NoDrop
+
+TODO: Add permissions support
+TODO: Add buy support!
 */
 package com.pathogenstudios.playerlives;
 
@@ -13,8 +16,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -116,7 +117,8 @@ public class playerLives extends JavaPlugin
     String key = livesPlayerList.get(i);
     int val = livesDb.getInt(key);
     System.out.println(key+" = "+val);
-    livesList.put(key,val-1);
+    livesList.put(key,val);
+    subtractLives(key,1);
    }
   }
   catch (Exception e)
@@ -153,23 +155,42 @@ public class playerLives extends JavaPlugin
  public void onDamage(EntityDamageEvent e)
  {
   Player player = (Player)e.getEntity();
+  String playerName = player.getName();
   
   if (player.getHealth()<1) {return;}//Player is already dead
   
   //If they will be dying at the end of this event, store their stuff!
   if (player.getHealth()-e.getDamage()<1)
   {
-   System.out.println("Player is gonna die!! '"+((Player)e.getEntity()).getDisplayName()+"'");
-   inventoryStore newStore = new inventoryStore();
-   newStore.copy(player.getInventory());
-   invStore.put(player,newStore);
+   if (getLives(playerName)>=1)
+   {
+    System.out.println("Player "+playerName+" is gonna die! Save their stuff!");
+    inventoryStore newStore = new inventoryStore();
+    newStore.copy(player.getInventory());
+    invStore.put(player,newStore);
+    //Will subtract a life during the "onDeath" event.
+   }
+   else
+   {
+    System.out.println("Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");
+   }
   }
  }
  
  public void onDeath(EntityDeathEvent e)
  {
-  System.out.println("Supressing drops for "+((Player)e.getEntity()).getDisplayName());
-  for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
+  Player player = (Player)e.getEntity();
+  String playerName = player.getName();
+  if (getLives(playerName)>=1)
+  {
+   System.out.println("Supressing drops for "+playerName);
+   for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
+   subtractLives(playerName,1);//Do the subtraction of a life.
+  }
+  else
+  {
+   System.out.println("Player "+playerName+" is out of lives, drops will not be surpressed.");
+  }
  }
  
  public void onRespawn(PlayerRespawnEvent e)
@@ -177,7 +198,23 @@ public class playerLives extends JavaPlugin
   //We can not give them back their stuff yet, just mark the entry as respawned and handle it in onMove...
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
-  if (invStore.containsKey(player)) {invStore.get(player).setIsRespawned(true);}
+  if (invStore.containsKey(player))
+  {
+   invStore.get(player).setIsRespawned(true);
+   int lives = getLives(player.getName());
+   if (lives==1)
+   {player.sendMessage("Welcome back! You only have one more life! Be careful!");}
+   else if (lives==0)
+   {player.sendMessage("Welcome back! You have no lives left! Be careful!");}
+   else
+   {player.sendMessage("Welcome back! You have "+lives+" lives left.");}
+  }
+  else
+  {
+   player.sendMessage("Welcome back! It looks like you were out of lives.");
+   player.sendMessage("Your stuff did not come back with you.");
+   player.sendMessage("However, it might still be where you died!");
+  }
  }
  
  public void onMove(PlayerMoveEvent e)
@@ -196,17 +233,18 @@ public class playerLives extends JavaPlugin
  {
   System.out.println("Player joined! '"+e.getPlayer().getName()+"'");
   String playerName = e.getPlayer().getName();
-  if (livesList.containsKey(playerName))
+  if (playerExists(playerName))
   {
-   System.out.println("Recognized player! They have '"+livesList.get(playerName)+"' lives!");
+   System.out.println("Recognized player! They have "+getLives(playerName)+" lives!");
   }
   else
   {
-   System.out.println("Unrecognized player! Giving them '"+defaultLives+"' lives!");
+   System.out.println("Unrecognized player! Giving them "+defaultLives+" lives!");
    livesList.put(playerName,defaultLives);
   }
  }
  
+ //Handle commands
  public boolean onCommand(CommandSender sender,Command command,String label,String[] args)
  {
   Player player = null;
@@ -230,17 +268,18 @@ public class playerLives extends JavaPlugin
    
    if (targetName!=playerName) {messagePrefix = targetName+" has";}
    
-   if (livesList.containsKey(targetName))
+   if (playerExists(targetName))
    {
-    sender.sendMessage(messagePrefix+" '"+livesList.get(targetName)+"' lives.");
+    sender.sendMessage(messagePrefix+" "+getLives(targetName)+" lives.");
    }
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;
   }
-  else if (commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0)//Give lives to someone /givelives [playername] [lives]
+  else if ((commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0) && sender.isOp())//Give lives to someone /givelives [playername] [lives]
   {
    String targetName = playerName;
    Integer count = 1;
+   if (commandName.compareToIgnoreCase("setlives") == 0) {count = defaultLives;}
    String messagePrefix = "You now have";
    
    for (int i = 0;i<args.length;i++)
@@ -260,7 +299,7 @@ public class playerLives extends JavaPlugin
     else
     {addLives(targetName,count);}
     
-    sender.sendMessage(messagePrefix+" "+livesList.get(targetName)+"' lives.");
+    sender.sendMessage(messagePrefix+" "+livesList.get(targetName)+" lives.");
    }
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;

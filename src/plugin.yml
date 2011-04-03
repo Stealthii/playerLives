@@ -10,3 +10,20 @@ commands:
                /<command>
                Example: /<command> | Display your number of lives
                Example: /<command> [player] | Dispaly the number of lives [player] has
+    givelives:
+        aliases: [givelife]
+        description: Gives you or others more lives
+        usage: |
+               /<command>
+               Example: /<command> [player] [count] | Give [player] [count] lives
+    takelives:
+        aliases: [takelife]
+        description: Takes lives from you or others
+        usage: |
+               /<command>
+               Example: /<command> [player] [count] | Take [count] lives from [player]
+    setlives:
+        description: Sets your or other's life count
+        usage: |
+               /<command>
+               Example: /<command> [player] [count] | Set [player]'s lives to [count]
