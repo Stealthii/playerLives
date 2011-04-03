@@ -1,6 +1,6 @@
 name: playerLives
 main: com.pathogenstudios.playerlives.playerLives
-version: 1.0.0
+version: 1.1.0
 author: Pathogen_David
 
 commands:
@@ -27,3 +27,9 @@ commands:
         usage: |
                /<command>
                Example: /<command> [player] [count] | Set [player]'s lives to [count]
+    buylives:
+        aliases: [buylife]
+        description: Buy more lives for yourself
+        usage: |
+               /<command> [count]
+               Example: /<command> [count] | Buy [count] lives for yourself

@@ -8,7 +8,6 @@ Special thanks to msm595 for his NoDrop plugin as it saved me a lot of time with
 https://github.com/msm595/NoDrop
 
 TODO: Add permissions support
-TODO: Add buy support!
 */
 package com.pathogenstudios.playerlives;
 
@@ -29,8 +28,11 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.server.PluginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import com.nijiko.coelho.iConomy.iConomy;
+import com.nijiko.coelho.iConomy.system.Account;
 
 //Method for temporarily storing inventory data
 class inventoryStore
@@ -69,16 +71,24 @@ class inventoryStore
 //Main class
 public class playerLives extends JavaPlugin
 { 
- plPlayerListener playerListener = new plPlayerListener(this);
- plEntityListener entityListener = new plEntityListener(this);
- PluginManager pluginMan;
+ public static final String pluginName = "Pathogen playerLives";
+ private plPlayerListener playerListener = new plPlayerListener(this);
+ private plEntityListener entityListener = new plEntityListener(this);
+ private plServerListener serverListener = new plServerListener(this);
+ private PluginManager pluginMan;
+ 
+ private iConomy iConomyPlugin = null;
+ 
  private Configuration conf;
- //private Configuration livesDb;
  private PropertyHandler livesDb;
  private HashMap<String,Integer> livesList;
- private int defaultLives;
- 
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
+ 
+ //Configuration:
+ private int defaultLives;
+ private double lifeCost;
+ private double deathPunishmentCost;
+ private double minBalanceForPunishment;
  
  //Constructor/Destrctor:
  public void onEnable()
@@ -94,7 +104,9 @@ public class playerLives extends JavaPlugin
   if (getDataFolder().mkdir())
   {
    conf.load();
-   conf.setProperty("lifeCost",100);//iConomy setting... (UNIMPLEMENTED)
+   conf.setProperty("lifeCost",100.0);//Cost to buy a new life (iConomy)
+   conf.setProperty("deathPunishmentCost",0.0);//Punishment for dying (iConomy)
+   conf.setProperty("minBalanceForPunishment",100.0);//Allows you to not punish poor people
    conf.setProperty("defaultLives",3);
    conf.save();
    
@@ -104,6 +116,9 @@ public class playerLives extends JavaPlugin
   
   //Get configuration
   System.out.println("Load config...");
+  lifeCost = conf.getDouble("lifeCost",100.0);
+  deathPunishmentCost = conf.getDouble("deathPunishmentCost",0.0);
+  minBalanceForPunishment = conf.getDouble("minBalanceForPunishment",100.0);
   defaultLives = conf.getInt("defaultLives",3);
   
   //Store all lives in memory...
@@ -132,6 +147,7 @@ public class playerLives extends JavaPlugin
   pluginMan.registerEvent(Event.Type.PLAYER_JOIN,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLAYER_MOVE,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN,playerListener,Event.Priority.Normal,this);
+  pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE,serverListener,Event.Priority.Monitor,this);
   
   System.out.println("Done loading Pathogen playerLives.");
  }
@@ -183,13 +199,13 @@ public class playerLives extends JavaPlugin
   String playerName = player.getName();
   if (getLives(playerName)>=1)
   {
-   System.out.println("Supressing drops for "+playerName);
+   System.out.println("["+pluginName+"]Supressing drops for "+playerName);
    for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
    subtractLives(playerName,1);//Do the subtraction of a life.
   }
   else
   {
-   System.out.println("Player "+playerName+" is out of lives, drops will not be surpressed.");
+   System.out.println("["+pluginName+"]Player "+playerName+" is out of lives, drops will not be surpressed.");
   }
  }
  
@@ -214,6 +230,20 @@ public class playerLives extends JavaPlugin
    player.sendMessage("Welcome back! It looks like you were out of lives.");
    player.sendMessage("Your stuff did not come back with you.");
    player.sendMessage("However, it might still be where you died!");
+  }
+  
+  //Death iConomy punishment:
+  if (iConomyPlugin!=null && deathPunishmentCost>0)
+  {
+   Account account = iConomy.getBank().getAccount(player.getName());
+   double oldBal = account.getBalance();
+   if (oldBal>=minBalanceForPunishment)
+   {
+    double toTake = deathPunishmentCost;
+    if (oldBal-toTake<0) {toTake = oldBal;}//Don't know if iConomy allows debt, but we'll prevent it.
+    account.subtract(toTake);
+    player.sendMessage("You also lost "+iConomy.getBank().format(toTake)+" leaving you with "+iConomy.getBank().format(account.getBalance())+".");
+   }
   }
  }
  
@@ -304,6 +334,54 @@ public class playerLives extends JavaPlugin
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;
   }
+  else if (commandName.compareToIgnoreCase("buylives") == 0)
+  {
+   String targetName = playerName;
+   Integer count = 1;
+   
+   if (iConomyPlugin == null)
+   {
+    sender.sendMessage("Server needs iConomy to enable buying lives!");
+    return true;// << Technically it was handled...
+   }
+   
+   if (args.length>=1)
+   {
+    try {count = Integer.parseInt(args[0]);}//Is it a number? If so, it must be the count...
+    catch (Exception e)
+    {
+     sender.sendMessage("Expected a number for count.");
+     return false;// << To avoid unexpected transactions, bail out. Use false so Bukkit will remind them of command usage.
+    }
+    
+    if (count<1)
+    {
+     sender.sendMessage("Invalid count.");
+     return false;
+    }
+   }
+   
+   if (playerExists(targetName))
+   {
+    Account account = iConomy.getBank().getAccount(targetName);
+    if (account.getBalance()<lifeCost*count)
+    {
+     sender.sendMessage("You do not have enough "+iConomy.getBank().getCurrency());
+     sender.sendMessage("You need "+iConomy.getBank().format(lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
+     return true;
+    }
+    
+    account.subtract(lifeCost*count);
+    addLives(targetName,count);
+    int numLives = getLives(targetName);
+    sender.sendMessage("You now have "+numLives+(numLives==1?" life":" lives")+" and "+iConomy.getBank().format(account.getBalance())+".");
+   }
+   else
+   {
+    sender.sendMessage("No player named "+targetName+".");
+    System.err.print("["+pluginName+"] Player '"+targetName+"' does not exist!");
+   }
+  }
   
   return false;
  }
@@ -327,4 +405,18 @@ public class playerLives extends JavaPlugin
  
  void addLives(String player,int lives) {setLives(player,getLives(player)+lives);}
  void subtractLives(String player,int lives) {addLives(player,-lives);}
+ 
+ //External Plugin Support
+ public void onPluginEnabled(PluginEvent e)
+ {
+  if (iConomyPlugin==null)
+  {
+   iConomyPlugin = (iConomy)pluginMan.getPlugin("iConomy");
+   
+   if (iConomyPlugin!=null && iConomyPlugin.isEnabled())
+   {System.out.println("["+pluginName+"] Successfully linked with iConomy");}
+   else
+   {iConomyPlugin = null;}
+  }
+ }
 }
