@@ -1,0 +1,12 @@
+name: playerLives
+main: com.pathogenstudios.playerlives.playerLives
+version: 1.0.0
+author: Pathogen_David
+
+commands:
+    lives:
+        description: Show the number of lives you or others have.
+        usage: |
+               /<command>
+               Example: /<command> | Display your number of lives
+               Example: /<command> [player] | Dispaly the number of lives [player] has
