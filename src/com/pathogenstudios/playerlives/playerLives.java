@@ -15,6 +15,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -28,7 +29,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.server.PluginEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import com.nijiko.coelho.iConomy.iConomy;
@@ -43,10 +44,13 @@ class inventoryStore
  private ItemStack leggings;
  private ItemStack boots;
  private boolean isRespawned = false;//Used by onMove to allow the inventory to come back...
+ private playerLives parent;
+ 
+ public inventoryStore(playerLives parent) {this.parent = parent;}
  
  public void copy(PlayerInventory inv)
  {
-  System.out.println("Saving inventory...");
+  if (parent.verbose) {System.out.println("["+playerLives.pluginName+"] Saving inventory...");}
   contents = inv.getContents().clone();
   helmet = inv.getHelmet();
   chestplate = inv.getChestplate();
@@ -56,7 +60,7 @@ class inventoryStore
  
  public void paste(PlayerInventory inv)
  {
-  System.out.println("Restoring inventory...");
+  if (parent.verbose) {System.out.println("["+playerLives.pluginName+"] Restoring inventory...");}
   inv.setContents(contents);
   if (helmet!=null && helmet.getTypeId()!=0)         {inv.setHelmet(helmet);}
   if (chestplate!=null && chestplate.getTypeId()!=0) {inv.setChestplate(chestplate);}
@@ -71,7 +75,7 @@ class inventoryStore
 //Main class
 public class playerLives extends JavaPlugin
 { 
- public static final String pluginName = "Pathogen playerLives";
+ public static final String pluginName = "pathogenPlayerLives";
  private plPlayerListener playerListener = new plPlayerListener(this);
  private plEntityListener entityListener = new plEntityListener(this);
  private plServerListener serverListener = new plServerListener(this);
@@ -89,40 +93,51 @@ public class playerLives extends JavaPlugin
  private double lifeCost;
  private double deathPunishmentCost;
  private double minBalanceForPunishment;
+ public boolean verbose;
+ private boolean infiniteLives;
  
  //Constructor/Destrctor:
  public void onEnable()
  {
-  System.out.println("Loading Pathogen playerLives...");
+  System.out.println("["+pluginName+"] Loading Pathogen playerLives...");
   
   conf = this.getConfiguration();
-  livesDb = new PropertyHandler(getDataFolder().getAbsolutePath()+File.separator+"livesDb.properties");
-  //new Configuration(new File(getDataFolder().getAbsolutePath()+File.separator+"livesDb.yml"));
   pluginMan = getServer().getPluginManager();
   
   //Create initial configuration
   if (getDataFolder().mkdir())
   {
+   System.out.println("["+pluginName+"] Config does not exist, populating with default...");
    conf.load();
    conf.setProperty("lifeCost",100.0);//Cost to buy a new life (iConomy)
    conf.setProperty("deathPunishmentCost",0.0);//Punishment for dying (iConomy)
    conf.setProperty("minBalanceForPunishment",100.0);//Allows you to not punish poor people
    conf.setProperty("defaultLives",3);
+   conf.setProperty("verbose",false);
+   conf.setProperty("infiniteLives",false);
    conf.save();
    
+   livesDb = new PropertyHandler(getDataFolder()+File.separator+"livesDb.properties");
    livesDb.load();
    livesDb.save();
+   System.out.println("["+pluginName+"] Config populated.");
+  }
+  else
+  {
+   livesDb = new PropertyHandler(getDataFolder()+File.separator+"livesDb.properties");//Created after the dir is made if it does not exist yet.
   }
   
   //Get configuration
-  System.out.println("Load config...");
+  System.out.println("["+pluginName+"] Load config...");
   lifeCost = conf.getDouble("lifeCost",100.0);
   deathPunishmentCost = conf.getDouble("deathPunishmentCost",0.0);
   minBalanceForPunishment = conf.getDouble("minBalanceForPunishment",100.0);
   defaultLives = conf.getInt("defaultLives",3);
+  verbose = conf.getBoolean("verbose",false);
+  infiniteLives = conf.getBoolean("infiniteLives",false);
   
   //Store all lives in memory...
-  System.out.println("Load lives database...");
+  if (verbose) {System.out.println("["+pluginName+"] Load lives database...");}
   livesList = new HashMap<String,Integer>();
   try
   {
@@ -131,14 +146,13 @@ public class playerLives extends JavaPlugin
    {
     String key = livesPlayerList.get(i);
     int val = livesDb.getInt(key);
-    System.out.println(key+" = "+val);
+    if (verbose) {System.out.println(key+" = "+val);}
     livesList.put(key,val);
-    subtractLives(key,1);
    }
   }
   catch (Exception e)
   {
-   System.err.println("COULD NOT LOAD LIVES DATABASE!");
+   System.err.println("["+pluginName+"] COULD NOT LOAD LIVES DATABASE!");
    e.printStackTrace();
   }
   
@@ -149,14 +163,14 @@ public class playerLives extends JavaPlugin
   pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE,serverListener,Event.Priority.Monitor,this);
   
-  System.out.println("Done loading Pathogen playerLives.");
+  System.out.println("["+pluginName+"] Done loading Pathogen playerLives.");
  }
  
  public void onDisable()
  {
-  System.out.println("Unloading Pathogen playerLives...");
+  System.out.println("["+pluginName+"] Unloading Pathogen playerLives...");
   
-  System.out.println("Saving lives db one last time...");
+  if (verbose) {System.out.println("["+pluginName+"] Saving lives db one last time...");}
   livesDb.load();
   Iterator<String> itr = livesList.keySet().iterator();
   while(itr.hasNext())
@@ -165,6 +179,7 @@ public class playerLives extends JavaPlugin
    livesDb.setInt(key,livesList.get(key));
   }
   livesDb.save();
+  if (verbose) {System.out.println("["+pluginName+"] I'm not even angry...");}
  }
  
  //Event Callbacks:
@@ -180,15 +195,15 @@ public class playerLives extends JavaPlugin
   {
    if (getLives(playerName)>=1)
    {
-    System.out.println("Player "+playerName+" is gonna die! Save their stuff!");
-    inventoryStore newStore = new inventoryStore();
+    if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! Save their stuff!");}
+    inventoryStore newStore = new inventoryStore(this);
     newStore.copy(player.getInventory());
     invStore.put(player,newStore);
     //Will subtract a life during the "onDeath" event.
    }
    else
    {
-    System.out.println("Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");
+    if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");}
    }
   }
  }
@@ -199,13 +214,14 @@ public class playerLives extends JavaPlugin
   String playerName = player.getName();
   if (getLives(playerName)>=1)
   {
-   System.out.println("["+pluginName+"]Supressing drops for "+playerName);
+   //TODO: Fix issue with drops getting surpressed when killed with /kill-type admin commands.
+   if (verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
    for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
-   subtractLives(playerName,1);//Do the subtraction of a life.
+   if (!infiniteLives) {subtractLives(playerName,1);}//Do the subtraction of a life.
   }
   else
   {
-   System.out.println("["+pluginName+"]Player "+playerName+" is out of lives, drops will not be surpressed.");
+   if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is out of lives, drops will not be surpressed.");}
   }
  }
  
@@ -218,7 +234,9 @@ public class playerLives extends JavaPlugin
   {
    invStore.get(player).setIsRespawned(true);
    int lives = getLives(player.getName());
-   if (lives==1)
+   if (infiniteLives)
+   {}//Don't display anything. pathogenPlayerLives is now a static game mechanic.
+   else if (lives==1)
    {player.sendMessage("Welcome back! You only have one more life! Be careful!");}
    else if (lives==0)
    {player.sendMessage("Welcome back! You have no lives left! Be careful!");}
@@ -227,7 +245,7 @@ public class playerLives extends JavaPlugin
   }
   else
   {
-   player.sendMessage("Welcome back! It looks like you were out of lives.");
+   if (!infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
    player.sendMessage("Your stuff did not come back with you.");
    player.sendMessage("However, it might still be where you died!");
   }
@@ -261,15 +279,15 @@ public class playerLives extends JavaPlugin
  
  public void onJoin(PlayerJoinEvent e)
  {
-  System.out.println("Player joined! '"+e.getPlayer().getName()+"'");
+  if (verbose) {System.out.println("["+pluginName+"] Player joined! '"+e.getPlayer().getName()+"'");}
   String playerName = e.getPlayer().getName();
   if (playerExists(playerName))
   {
-   System.out.println("Recognized player! They have "+getLives(playerName)+" lives!");
+   if (verbose) {System.out.println("["+pluginName+"] Recognized player! They have "+getLives(playerName)+" lives!");}
   }
   else
   {
-   System.out.println("Unrecognized player! Giving them "+defaultLives+" lives!");
+   if (verbose) {System.out.println("["+pluginName+"] Unrecognized player! Giving them "+defaultLives+" lives!");}
    livesList.put(playerName,defaultLives);
   }
  }
@@ -296,11 +314,15 @@ public class playerLives extends JavaPlugin
    }
    else if (player==null) {return false;}//Console does not have lives!
    
+   targetName = searchPlayer(targetName);
    if (targetName!=playerName) {messagePrefix = targetName+" has";}
    
    if (playerExists(targetName))
    {
-    sender.sendMessage(messagePrefix+" "+getLives(targetName)+" lives.");
+    if (infiniteLives)
+    {sender.sendMessage(messagePrefix+" infinite lives.");}
+    else
+    {sender.sendMessage(messagePrefix+" "+getLives(targetName)+" lives.");}
    }
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;
@@ -319,6 +341,7 @@ public class playerLives extends JavaPlugin
     catch (Exception e) {targetName = args[i];}//If not, it is probably the player name
    }
    
+   targetName = searchPlayer(targetName);
    if (commandName.compareToIgnoreCase("takelives") == 0) {count=-count;}
    if (targetName!=playerName) {messagePrefix=targetName+" now has";}
    
@@ -366,7 +389,7 @@ public class playerLives extends JavaPlugin
     Account account = iConomy.getBank().getAccount(targetName);
     if (account.getBalance()<lifeCost*count)
     {
-     sender.sendMessage("You do not have enough "+iConomy.getBank().getCurrency());
+     sender.sendMessage("You do not have enough"+(iConomy.getBank().format(932).replaceFirst("932","")));//Hacky, yes. iConomy needs a Bank.getCurrencyPlural()
      sender.sendMessage("You need "+iConomy.getBank().format(lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
      return true;
     }
@@ -381,6 +404,7 @@ public class playerLives extends JavaPlugin
     sender.sendMessage("No player named "+targetName+".");
     System.err.print("["+pluginName+"] Player '"+targetName+"' does not exist!");
    }
+   return true;
   }
   
   return false;
@@ -391,7 +415,15 @@ public class playerLives extends JavaPlugin
  
  int getLives(String player)
  {
-  if (playerExists(player)) {return livesList.get(player);}else{return -1;}
+  if (playerExists(player))
+  {
+   int ret = livesList.get(player);
+   if (ret<=0 && infiniteLives)
+   {return 1;}//Never return <0 if infiniteLives is on
+   else
+   {return ret;}
+  }
+  else {return -1;}
  }
  
  void setLives(String player,int newValue)
@@ -406,8 +438,19 @@ public class playerLives extends JavaPlugin
  void addLives(String player,int lives) {setLives(player,getLives(player)+lives);}
  void subtractLives(String player,int lives) {addLives(player,-lives);}
  
+ //Util
+ public String searchPlayer(String targetName)
+ {
+  if (!playerExists(targetName))//Try to resolve the name to someone on the server...
+  {
+   List<Player> matches = getServer().matchPlayer(targetName);
+   if (matches.size()>=1) {return matches.get(0).getName();}
+  }
+  return targetName;
+ }
+ 
  //External Plugin Support
- public void onPluginEnabled(PluginEvent e)
+ public void onPluginEnable(PluginEnableEvent e)
  {
   if (iConomyPlugin==null)
   {

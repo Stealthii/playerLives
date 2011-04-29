@@ -55,7 +55,7 @@ public final class PropertyHandler {
         if (file.exists()) {
             load();
         } else {
-            save();
+            save();//This fails when the directory does not exist!
         }
     }
 
