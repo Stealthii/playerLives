@@ -79,7 +79,6 @@ public class playerLives extends JavaPlugin
  private plPlayerListener playerListener = new plPlayerListener(this);
  private plEntityListener entityListener = new plEntityListener(this);
  private plServerListener serverListener = new plServerListener(this);
- private plBlockListener blockListener = new plBlockListener(this);
  private PluginManager pluginMan;
  
  private iConomy iConomyPlugin = null;
@@ -163,8 +162,6 @@ public class playerLives extends JavaPlugin
   pluginMan.registerEvent(Event.Type.PLAYER_MOVE,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE,serverListener,Event.Priority.Monitor,this);
-  pluginMan.registerEvent(Event.Type.BLOCK_PHYSICS,blockListener,Event.Priority.Normal,this);//CACTUS CLUB!
-  pluginMan.registerEvent(Event.Type.PLAYER_INTERACT,playerListener,Event.Priority.Highest,this);//CACTUS CLUB!
   
   System.out.println("["+pluginName+"] Done loading Pathogen playerLives.");
  }
