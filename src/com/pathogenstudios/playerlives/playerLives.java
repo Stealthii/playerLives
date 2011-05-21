@@ -2,12 +2,6 @@
 playerLives
 Created by Pathogen David
 http://www.pathogenstudios.com/
-
-Special thanks to msm595 for his NoDrop plugin as it saved me a lot of time with figuring out stuff in Bukkit.
-(And it is loosly based on it.)
-https://github.com/msm595/NoDrop
-
-TODO: Add permissions support
 */
 package com.pathogenstudios.playerlives;
 
@@ -32,8 +26,9 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import com.nijiko.coelho.iConomy.iConomy;
-import com.nijiko.coelho.iConomy.system.Account;
+
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
 
 //Method for temporarily storing inventory data
 class inventoryStore
@@ -74,15 +69,20 @@ class inventoryStore
 
 //Main class
 public class playerLives extends JavaPlugin
-{ 
+{
  public static final String pluginName = "pathogenPlayerLives";
+ 
+ //Listeners
  private plPlayerListener playerListener = new plPlayerListener(this);
  private plEntityListener entityListener = new plEntityListener(this);
  private plServerListener serverListener = new plServerListener(this);
+ 
+ //Plugins
  private PluginManager pluginMan;
+ private PermissionHandler permissionsPlugin = null;
+ private econWrapper econ;
  
- private iConomy iConomyPlugin = null;
- 
+ //Internal
  private Configuration conf;
  private PropertyHandler livesDb;
  private HashMap<String,Integer> livesList;
@@ -103,6 +103,7 @@ public class playerLives extends JavaPlugin
   
   conf = this.getConfiguration();
   pluginMan = getServer().getPluginManager();
+  econ = new econWrapper(pluginMan);
   
   //Create initial configuration
   if (getDataFolder().mkdir())
@@ -156,6 +157,7 @@ public class playerLives extends JavaPlugin
    e.printStackTrace();
   }
   
+  //Register Events
   pluginMan.registerEvent(Event.Type.ENTITY_DAMAGE,entityListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.ENTITY_DEATH,entityListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLAYER_JOIN,playerListener,Event.Priority.Normal,this);
@@ -188,6 +190,7 @@ public class playerLives extends JavaPlugin
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
   
+  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
   if (player.getHealth()<1) {return;}//Player is already dead
   
   //If they will be dying at the end of this event, store their stuff!
@@ -212,6 +215,9 @@ public class playerLives extends JavaPlugin
  {
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
+  
+  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+  
   if (getLives(playerName)>=1)
   {
    //TODO: Fix issue with drops getting surpressed when killed with /kill-type admin commands.
@@ -230,6 +236,9 @@ public class playerLives extends JavaPlugin
   //We can not give them back their stuff yet, just mark the entry as respawned and handle it in onMove...
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
+  
+  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+  
   if (invStore.containsKey(player))
   {
    invStore.get(player).setIsRespawned(true);
@@ -251,16 +260,15 @@ public class playerLives extends JavaPlugin
   }
   
   //Death iConomy punishment:
-  if (iConomyPlugin!=null && deathPunishmentCost>0)
+  if (econ.isEnabled() && deathPunishmentCost>0)
   {
-   Account account = iConomy.getBank().getAccount(player.getName());
-   double oldBal = account.getBalance();
+   double oldBal = econ.getBalance(player);
    if (oldBal>=minBalanceForPunishment)
    {
     double toTake = deathPunishmentCost;
     if (oldBal-toTake<0) {toTake = oldBal;}//Don't know if iConomy allows debt, but we'll prevent it.
-    account.subtract(toTake);
-    player.sendMessage("You also lost "+iConomy.getBank().format(toTake)+" leaving you with "+iConomy.getBank().format(account.getBalance())+".");
+    econ.subBalance(player,toTake);
+    player.sendMessage("You also lost "+econ.format(toTake)+" leaving you with "+econ.format(econ.getBalance(player))+".");
    }
   }
  }
@@ -272,6 +280,7 @@ public class playerLives extends JavaPlugin
   //Give them their stuff back (if they just respawned and have logged stuff)
   if (invStore.containsKey(player) && invStore.get(player).isRespawned())
   {
+   if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
    invStore.get(player).paste(player.getInventory());
    invStore.remove(player);
   }
@@ -315,7 +324,13 @@ public class playerLives extends JavaPlugin
    else if (player==null) {return false;}//Console does not have lives!
    
    targetName = searchPlayer(targetName);
-   if (targetName!=playerName) {messagePrefix = targetName+" has";}
+   if (targetName!=playerName)
+   {
+    messagePrefix = targetName+" has";
+    if (!checkPermission(player,"checkOthers")) {player.sendMessage(accessDenied);return true;}
+   }
+   else if (!checkPermission(player,"checkSelf")) {player.sendMessage(accessDenied);return true;}
+   
    
    if (playerExists(targetName))
    {
@@ -329,6 +344,7 @@ public class playerLives extends JavaPlugin
   }
   else if ((commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0) && sender.isOp())//Give lives to someone /givelives [playername] [lives]
   {
+   if (!checkPermission(player,"change")) {player.sendMessage(accessDenied);return true;}
    String targetName = playerName;
    Integer count = 1;
    if (commandName.compareToIgnoreCase("setlives") == 0) {count = defaultLives;}
@@ -359,12 +375,13 @@ public class playerLives extends JavaPlugin
   }
   else if (commandName.compareToIgnoreCase("buylives") == 0)
   {
+   if (!checkPermission(player,"buy")) {player.sendMessage(accessDenied);return true;}
    String targetName = playerName;
    Integer count = 1;
    
-   if (iConomyPlugin == null)
+   if (!econ.isEnabled())
    {
-    sender.sendMessage("Server needs iConomy to enable buying lives!");
+    sender.sendMessage("Server needs an economy to enable buying lives!");
     return true;// << Technically it was handled...
    }
    
@@ -386,18 +403,18 @@ public class playerLives extends JavaPlugin
    
    if (playerExists(targetName))
    {
-    Account account = iConomy.getBank().getAccount(targetName);
-    if (account.getBalance()<lifeCost*count)
+    //Holdings account = iConomy.getAccount(targetName).getHoldings();
+    if (econ.getBalance(targetName)<lifeCost*count)
     {
-     sender.sendMessage("You do not have enough"+(iConomy.getBank().format(932).replaceFirst("932","")));//Hacky, yes. iConomy needs a Bank.getCurrencyPlural()
-     sender.sendMessage("You need "+iConomy.getBank().format(lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
+     sender.sendMessage("You do not have enough"+econ.getCurrency(true));
+     sender.sendMessage("You need "+econ.format(lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
      return true;
     }
     
-    account.subtract(lifeCost*count);
+    econ.subBalance(targetName,lifeCost*count);
     addLives(targetName,count);
     int numLives = getLives(targetName);
-    sender.sendMessage("You now have "+numLives+(numLives==1?" life":" lives")+" and "+iConomy.getBank().format(account.getBalance())+".");
+    sender.sendMessage("You now have "+numLives+(numLives==1?" life":" lives")+" and "+econ.format(econ.getBalance(targetName))+".");
    }
    else
    {
@@ -409,6 +426,21 @@ public class playerLives extends JavaPlugin
   
   return false;
  }
+ 
+ //Permissions Integration
+ boolean checkPermission(Player player,String node)
+ {
+  if (permissionsPlugin!=null)
+  {return permissionsPlugin.has(player,"playerlives."+node);}
+  else
+  {
+   if (node=="canUse" || node=="checkSelf")
+   {return true;}//Things normal people can use.
+   else//checkOthers, change, buy
+   {return player.isOp();}//If not, assume op-only.
+  }
+ }
+ final static String accessDenied = "You do not have access to that command.";
  
  //Lives manipulation
  boolean playerExists(String player) {return livesList.containsKey(player);}
@@ -452,14 +484,17 @@ public class playerLives extends JavaPlugin
  //External Plugin Support
  public void onPluginEnable(PluginEnableEvent e)
  {
-  if (iConomyPlugin==null)
+  if (permissionsPlugin==null)
   {
-   iConomyPlugin = (iConomy)pluginMan.getPlugin("iConomy");
+   Permissions tempPerm = (Permissions)pluginMan.getPlugin("Permissions");
    
-   if (iConomyPlugin!=null && iConomyPlugin.isEnabled())
-   {System.out.println("["+pluginName+"] Successfully linked with iConomy");}
+   if (tempPerm!=null)
+   {
+    permissionsPlugin = tempPerm.getHandler();
+    System.out.println("["+pluginName+"] Successfully linked with Permissions");
+   }
    else
-   {iConomyPlugin = null;}
+   {permissionsPlugin = null;}
   }
  }
 }
