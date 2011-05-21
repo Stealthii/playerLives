@@ -29,6 +29,8 @@ import org.bukkit.inventory.PlayerInventory;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.pathogenstudios.playerlives.econWrappers.iConomy4;
+import com.pathogenstudios.playerlives.econWrappers.iConomy5;
 
 //Method for temporarily storing inventory data
 class inventoryStore
@@ -103,7 +105,7 @@ public class playerLives extends JavaPlugin
   
   conf = this.getConfiguration();
   pluginMan = getServer().getPluginManager();
-  econ = new econWrapper(pluginMan);
+  econ = new econWrapper();//Dummy wrapper until a compatible econ plugin is detected.
   
   //Create initial configuration
   if (getDataFolder().mkdir())
@@ -484,6 +486,32 @@ public class playerLives extends JavaPlugin
  //External Plugin Support
  public void onPluginEnable(PluginEnableEvent e)
  {
+  //Economy Plugins
+  if (!econ.isEnabled())
+  {
+   try
+   {
+    com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+    if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
+    {
+     System.out.println("["+playerLives.pluginName+"] Successfully linked with iConomy 5");
+     econ = new iConomy5();
+    }
+   }
+   catch (NoClassDefFoundError ex)
+   {
+    if (verbose) {System.err.println("["+pluginName+"] Failed to link with iConomy. Trying iConomy 4...");}
+    com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+    
+    if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
+    {
+     System.out.println("["+playerLives.pluginName+"] Successfully linked with iConomy 4");
+     econ = new iConomy4();
+    }
+   }
+  }
+  
+  //Permissions Plugins
   if (permissionsPlugin==null)
   {
    Permissions tempPerm = (Permissions)pluginMan.getPlugin("Permissions");
