@@ -67,6 +67,7 @@ public class mySQL extends dbWrapper
   if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
   if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Done starting MySQL!");}
  }
+ public boolean isActive() {return con!=null && db!=null;}
  
  public void close()
  {

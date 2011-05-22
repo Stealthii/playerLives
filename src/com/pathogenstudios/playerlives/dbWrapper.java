@@ -6,6 +6,7 @@ public abstract class dbWrapper
 {
  protected playerLives parent;
  public dbWrapper(playerLives parent) {this.parent = parent;}
+ public boolean isActive() {return false;}
  
  //Abstracts:
  public abstract void load();

@@ -19,6 +19,7 @@ public class flatfile extends dbWrapper
   super(parent);
   load();
  }
+ public boolean isActive() {return livesDb!=null;}
  
  public void load()
  {

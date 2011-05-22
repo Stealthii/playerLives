@@ -29,7 +29,6 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.pathogenstudios.playerlives.dbWrappers.*;
 import com.pathogenstudios.playerlives.econWrappers.*;
 
-
 //Method for temporarily storing inventory data
 class inventoryStore
 {
@@ -81,7 +80,7 @@ public class playerLives extends JavaPlugin
  private PluginManager pluginMan;
  private PermissionHandler permissionsPlugin = null;
  private econWrapper econ;
- private dbWrapper db;
+ private dbWrapper db = null;
  
  //Internal
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
@@ -105,7 +104,7 @@ public class playerLives extends JavaPlugin
   
   //Load Lives Db
   if (conf.dbDriver.compareTo("mysql")==0) {db = new mySQL(this);}
-  else {db = new flatfile(this);}
+  if (db==null || !db.isActive()) {db = new flatfile(this);}//Default / fall back on flatfile.
   
   //Register Events
   pluginMan.registerEvent(Event.Type.ENTITY_DAMAGE,entityListener,Event.Priority.Normal,this);
@@ -131,7 +130,7 @@ public class playerLives extends JavaPlugin
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
   
-  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {return;}
   if (player.getHealth()<1) {return;}//Player is already dead
   
   //If they will be dying at the end of this event, store their stuff!
@@ -157,13 +156,20 @@ public class playerLives extends JavaPlugin
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
   
-  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {return;}
   
   if (db.get(playerName)>=1)
   {
-   //TODO: Fix issue with drops getting surpressed when killed with /kill-type admin commands.
-   if (conf.verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
-   for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
+   //Suppress Drops
+   if (invStore.containsKey(player))//Don't suppress drops unless we got them!
+   {
+    if (conf.verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
+    for(int i=0;i<e.getDrops().size();i++)
+    {e.getDrops().remove(i);i--;}
+   }
+   else if (conf.verbose)
+   {System.out.println("["+pluginName+"] Not supressing drops for "+playerName+" because we did not capture them.");}
+   
    if (!conf.infiniteLives) {db.take(playerName,1);}//Do the subtraction of a life.
   }
   else
@@ -177,8 +183,7 @@ public class playerLives extends JavaPlugin
   //We can not give them back their stuff yet, just mark the entry as respawned and handle it in onMove...
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
-  
-  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {return;}
   
   if (invStore.containsKey(player))
   {
@@ -221,7 +226,7 @@ public class playerLives extends JavaPlugin
   //Give them their stuff back (if they just respawned and have logged stuff)
   if (invStore.containsKey(player) && invStore.get(player).isRespawned())
   {
-   if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
+   if (!checkPermission(player,"canuse")) {return;}
    invStore.get(player).paste(player.getInventory());
    invStore.remove(player);
   }
