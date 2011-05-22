@@ -102,10 +102,9 @@ public class playerLives extends JavaPlugin
   
   //Config Loading and such
   conf = new configMan(this);
-  conf.load();//This will naturally populate with defaults when necessary.
   
   //Load Lives Db
-  if (conf.dbDriver.toLowerCase()=="mysql") {db = new mySQL(this);}
+  if (conf.dbDriver.compareTo("mysql")==0) {db = new mySQL(this);}
   else {db = new flatfile(this);}
   
   //Register Events
