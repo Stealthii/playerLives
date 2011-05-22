@@ -377,9 +377,9 @@ public class playerLives extends JavaPlugin
   {return permissionsPlugin.has(player,"playerlives."+node);}
   else
   {
-   if (node=="canuse" || node=="checkself")
+   if (node=="canuse" || node=="checkself" || node=="buy")
    {return true;}//Things normal people can use.
-   else//checkothers, change, buy
+   else//checkothers, change
    {return player.isOp();}//If not, assume op-only.
   }
  }
