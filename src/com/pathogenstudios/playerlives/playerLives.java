@@ -5,10 +5,7 @@ http://www.pathogenstudios.com/
 */
 package com.pathogenstudios.playerlives;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 import org.bukkit.command.Command;
@@ -17,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.util.config.Configuration;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -29,8 +25,10 @@ import org.bukkit.inventory.PlayerInventory;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
-import com.pathogenstudios.playerlives.econWrappers.iConomy4;
-import com.pathogenstudios.playerlives.econWrappers.iConomy5;
+
+import com.pathogenstudios.playerlives.dbWrappers.*;
+import com.pathogenstudios.playerlives.econWrappers.*;
+
 
 //Method for temporarily storing inventory data
 class inventoryStore
@@ -47,7 +45,7 @@ class inventoryStore
  
  public void copy(PlayerInventory inv)
  {
-  if (parent.verbose) {System.out.println("["+playerLives.pluginName+"] Saving inventory...");}
+  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Saving inventory...");}
   contents = inv.getContents().clone();
   helmet = inv.getHelmet();
   chestplate = inv.getChestplate();
@@ -57,7 +55,7 @@ class inventoryStore
  
  public void paste(PlayerInventory inv)
  {
-  if (parent.verbose) {System.out.println("["+playerLives.pluginName+"] Restoring inventory...");}
+  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Restoring inventory...");}
   inv.setContents(contents);
   if (helmet!=null && helmet.getTypeId()!=0)         {inv.setHelmet(helmet);}
   if (chestplate!=null && chestplate.getTypeId()!=0) {inv.setChestplate(chestplate);}
@@ -83,81 +81,32 @@ public class playerLives extends JavaPlugin
  private PluginManager pluginMan;
  private PermissionHandler permissionsPlugin = null;
  private econWrapper econ;
+ private dbWrapper db;
  
  //Internal
- private Configuration conf;
- private PropertyHandler livesDb;
- private HashMap<String,Integer> livesList;
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
  
  //Configuration:
- private int defaultLives;
- private double lifeCost;
- private double deathPunishmentCost;
- private double minBalanceForPunishment;
- public boolean verbose;
- private boolean infiniteLives;
+ public configMan conf;
  
  //Constructor/Destrctor:
  public void onEnable()
  {
   System.out.println("["+pluginName+"] Loading Pathogen playerLives...");
   
-  conf = this.getConfiguration();
   pluginMan = getServer().getPluginManager();
   econ = new econWrapper();//Dummy wrapper until a compatible econ plugin is detected.
   
-  //Create initial configuration
-  if (getDataFolder().mkdir())
-  {
-   System.out.println("["+pluginName+"] Config does not exist, populating with default...");
-   conf.load();
-   conf.setProperty("lifeCost",100.0);//Cost to buy a new life (iConomy)
-   conf.setProperty("deathPunishmentCost",0.0);//Punishment for dying (iConomy)
-   conf.setProperty("minBalanceForPunishment",100.0);//Allows you to not punish poor people
-   conf.setProperty("defaultLives",3);
-   conf.setProperty("verbose",false);
-   conf.setProperty("infiniteLives",false);
-   conf.save();
-   
-   livesDb = new PropertyHandler(getDataFolder()+File.separator+"livesDb.properties");
-   livesDb.load();
-   livesDb.save();
-   System.out.println("["+pluginName+"] Config populated.");
-  }
-  else
-  {
-   livesDb = new PropertyHandler(getDataFolder()+File.separator+"livesDb.properties");//Created after the dir is made if it does not exist yet.
-  }
+  //Make config folder if necessary...
+  getDataFolder().mkdir();//boolean newInstall = 
   
-  //Get configuration
-  System.out.println("["+pluginName+"] Load config...");
-  lifeCost = conf.getDouble("lifeCost",100.0);
-  deathPunishmentCost = conf.getDouble("deathPunishmentCost",0.0);
-  minBalanceForPunishment = conf.getDouble("minBalanceForPunishment",100.0);
-  defaultLives = conf.getInt("defaultLives",3);
-  verbose = conf.getBoolean("verbose",false);
-  infiniteLives = conf.getBoolean("infiniteLives",false);
+  //Config Loading and such
+  conf = new configMan(this);
+  conf.load();//This will naturally populate with defaults when necessary.
   
-  //Store all lives in memory...
-  if (verbose) {System.out.println("["+pluginName+"] Load lives database...");}
-  livesList = new HashMap<String,Integer>();
-  try
-  {
-   ArrayList<String> livesPlayerList = livesDb.getKeys();
-   for(int i = 0;i<livesPlayerList.size();i++)
-   {
-    String key = livesPlayerList.get(i);
-    int val = livesDb.getInt(key);
-    if (verbose) {System.out.println(key+" = "+val);}
-    livesList.put(key,val);
-   }
-  }
-  catch (Exception e)
-  {
-   System.err.println("["+pluginName+"] COULD NOT LOAD LIVES DATABASE!");
-   e.printStackTrace();
-  }
+  //Load Lives Db
+  if (conf.dbDriver.toLowerCase()=="mysql") {db = new mySQL(this);}
+  else {db = new flatfile(this);}
   
   //Register Events
   pluginMan.registerEvent(Event.Type.ENTITY_DAMAGE,entityListener,Event.Priority.Normal,this);
@@ -173,17 +122,8 @@ public class playerLives extends JavaPlugin
  public void onDisable()
  {
   System.out.println("["+pluginName+"] Unloading Pathogen playerLives...");
-  
-  if (verbose) {System.out.println("["+pluginName+"] Saving lives db one last time...");}
-  livesDb.load();
-  Iterator<String> itr = livesList.keySet().iterator();
-  while(itr.hasNext())
-  {
-   String key=itr.next();
-   livesDb.setInt(key,livesList.get(key));
-  }
-  livesDb.save();
-  if (verbose) {System.out.println("["+pluginName+"] I'm not even angry...");}
+  db.close();
+  if (conf.verbose) {System.out.println("["+pluginName+"] I'm not even angry...");}
  }
  
  //Event Callbacks:
@@ -192,15 +132,15 @@ public class playerLives extends JavaPlugin
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
   
-  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
   if (player.getHealth()<1) {return;}//Player is already dead
   
   //If they will be dying at the end of this event, store their stuff!
   if (player.getHealth()-e.getDamage()<1)
   {
-   if (getLives(playerName)>=1)
+   if (db.get(playerName)>=1)
    {
-    if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! Save their stuff!");}
+    if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! Save their stuff!");}
     inventoryStore newStore = new inventoryStore(this);
     newStore.copy(player.getInventory());
     invStore.put(player,newStore);
@@ -208,7 +148,7 @@ public class playerLives extends JavaPlugin
    }
    else
    {
-    if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");}
+    if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");}
    }
   }
  }
@@ -218,18 +158,18 @@ public class playerLives extends JavaPlugin
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
   
-  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
   
-  if (getLives(playerName)>=1)
+  if (db.get(playerName)>=1)
   {
    //TODO: Fix issue with drops getting surpressed when killed with /kill-type admin commands.
-   if (verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
+   if (conf.verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
    for(int i=0;i<e.getDrops().size();i++) {e.getDrops().remove(i);i--;}
-   if (!infiniteLives) {subtractLives(playerName,1);}//Do the subtraction of a life.
+   if (!conf.infiniteLives) {db.take(playerName,1);}//Do the subtraction of a life.
   }
   else
   {
-   if (verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is out of lives, drops will not be surpressed.");}
+   if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is out of lives, drops will not be surpressed.");}
   }
  }
  
@@ -239,13 +179,13 @@ public class playerLives extends JavaPlugin
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
   
-  if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+  if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
   
   if (invStore.containsKey(player))
   {
    invStore.get(player).setIsRespawned(true);
-   int lives = getLives(player.getName());
-   if (infiniteLives)
+   int lives = db.get(player.getName());
+   if (conf.infiniteLives)
    {}//Don't display anything. pathogenPlayerLives is now a static game mechanic.
    else if (lives==1)
    {player.sendMessage("Welcome back! You only have one more life! Be careful!");}
@@ -256,18 +196,18 @@ public class playerLives extends JavaPlugin
   }
   else
   {
-   if (!infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
+   if (!conf.infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
    player.sendMessage("Your stuff did not come back with you.");
    player.sendMessage("However, it might still be where you died!");
   }
   
   //Death iConomy punishment:
-  if (econ.isEnabled() && deathPunishmentCost>0)
+  if (econ.isEnabled() && conf.deathPunishmentCost>0)
   {
    double oldBal = econ.getBalance(player);
-   if (oldBal>=minBalanceForPunishment)
+   if (oldBal>=conf.minBalanceForPunishment)
    {
-    double toTake = deathPunishmentCost;
+    double toTake = conf.deathPunishmentCost;
     if (oldBal-toTake<0) {toTake = oldBal;}//Don't know if iConomy allows debt, but we'll prevent it.
     econ.subBalance(player,toTake);
     player.sendMessage("You also lost "+econ.format(toTake)+" leaving you with "+econ.format(econ.getBalance(player))+".");
@@ -282,7 +222,7 @@ public class playerLives extends JavaPlugin
   //Give them their stuff back (if they just respawned and have logged stuff)
   if (invStore.containsKey(player) && invStore.get(player).isRespawned())
   {
-   if (!checkPermission(player,"canUse")) {player.sendMessage(accessDenied);return;}
+   if (!checkPermission(player,"canuse")) {player.sendMessage(accessDenied);return;}
    invStore.get(player).paste(player.getInventory());
    invStore.remove(player);
   }
@@ -290,16 +230,16 @@ public class playerLives extends JavaPlugin
  
  public void onJoin(PlayerJoinEvent e)
  {
-  if (verbose) {System.out.println("["+pluginName+"] Player joined! '"+e.getPlayer().getName()+"'");}
-  String playerName = e.getPlayer().getName();
-  if (playerExists(playerName))
+  if (conf.verbose) {System.out.println("["+pluginName+"] Player joined! '"+e.getPlayer().getName()+"'");}
+  Player player = e.getPlayer();
+  if (db.exists(player))
   {
-   if (verbose) {System.out.println("["+pluginName+"] Recognized player! They have "+getLives(playerName)+" lives!");}
+   if (conf.verbose) {System.out.println("["+pluginName+"] Recognized player! They have "+db.get(player.getName())+" lives!");}
   }
   else
   {
-   if (verbose) {System.out.println("["+pluginName+"] Unrecognized player! Giving them "+defaultLives+" lives!");}
-   livesList.put(playerName,defaultLives);
+   if (conf.verbose) {System.out.println("["+pluginName+"] Unrecognized player! Giving them "+conf.defaultLives+" lives!");}
+   db.addPlayer(player,conf.defaultLives);
   }
  }
  
@@ -329,27 +269,27 @@ public class playerLives extends JavaPlugin
    if (targetName!=playerName)
    {
     messagePrefix = targetName+" has";
-    if (!checkPermission(player,"checkOthers")) {player.sendMessage(accessDenied);return true;}
+    if (!checkPermission(player,"checkothers")) {player.sendMessage(accessDenied);return true;}
    }
-   else if (!checkPermission(player,"checkSelf")) {player.sendMessage(accessDenied);return true;}
+   else if (!checkPermission(player,"checkself")) {player.sendMessage(accessDenied);return true;}
    
    
-   if (playerExists(targetName))
+   if (db.exists(targetName))
    {
-    if (infiniteLives)
+    if (conf.infiniteLives)
     {sender.sendMessage(messagePrefix+" infinite lives.");}
     else
-    {sender.sendMessage(messagePrefix+" "+getLives(targetName)+" lives.");}
+    {sender.sendMessage(messagePrefix+" "+db.get(targetName)+" lives.");}
    }
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;
   }
-  else if ((commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0) && sender.isOp())//Give lives to someone /givelives [playername] [lives]
+  else if ((commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0))//Give lives to someone /givelives [playername] [lives]
   {
    if (!checkPermission(player,"change")) {player.sendMessage(accessDenied);return true;}
    String targetName = playerName;
    Integer count = 1;
-   if (commandName.compareToIgnoreCase("setlives") == 0) {count = defaultLives;}
+   if (commandName.compareToIgnoreCase("setlives") == 0) {count = conf.defaultLives;}
    String messagePrefix = "You now have";
    
    for (int i = 0;i<args.length;i++)
@@ -363,14 +303,14 @@ public class playerLives extends JavaPlugin
    if (commandName.compareToIgnoreCase("takelives") == 0) {count=-count;}
    if (targetName!=playerName) {messagePrefix=targetName+" now has";}
    
-   if (playerExists(targetName))
+   if (db.exists(targetName))
    {
     if (commandName.compareToIgnoreCase("setlives") == 0)
-    {setLives(targetName,count);}
+    {db.set(targetName,count);}
     else
-    {addLives(targetName,count);}
+    {db.give(targetName,count);}
     
-    sender.sendMessage(messagePrefix+" "+livesList.get(targetName)+" lives.");
+    sender.sendMessage(messagePrefix+" "+db.get(targetName)+" lives.");
    }
    else {sender.sendMessage("No player named "+targetName+".");}
    return true;
@@ -403,19 +343,19 @@ public class playerLives extends JavaPlugin
     }
    }
    
-   if (playerExists(targetName))
+   if (db.exists(targetName))
    {
     //Holdings account = iConomy.getAccount(targetName).getHoldings();
-    if (econ.getBalance(targetName)<lifeCost*count)
+    if (econ.getBalance(targetName)<conf.lifeCost*count)
     {
      sender.sendMessage("You do not have enough"+econ.getCurrency(true));
-     sender.sendMessage("You need "+econ.format(lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
+     sender.sendMessage("You need "+econ.format(conf.lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
      return true;
     }
     
-    econ.subBalance(targetName,lifeCost*count);
-    addLives(targetName,count);
-    int numLives = getLives(targetName);
+    econ.subBalance(targetName,conf.lifeCost*count);
+    db.give(targetName,count);
+    int numLives = db.get(targetName);
     sender.sendMessage("You now have "+numLives+(numLives==1?" life":" lives")+" and "+econ.format(econ.getBalance(targetName))+".");
    }
    else
@@ -429,53 +369,25 @@ public class playerLives extends JavaPlugin
   return false;
  }
  
- //Permissions Integration
+ //Util
  boolean checkPermission(Player player,String node)
  {
+  node = node.toLowerCase();//Just in case...
   if (permissionsPlugin!=null)
   {return permissionsPlugin.has(player,"playerlives."+node);}
   else
   {
-   if (node=="canUse" || node=="checkSelf")
+   if (node=="canuse" || node=="checkself")
    {return true;}//Things normal people can use.
-   else//checkOthers, change, buy
+   else//checkothers, change, buy
    {return player.isOp();}//If not, assume op-only.
   }
  }
  final static String accessDenied = "You do not have access to that command.";
  
- //Lives manipulation
- boolean playerExists(String player) {return livesList.containsKey(player);}
- 
- int getLives(String player)
- {
-  if (playerExists(player))
-  {
-   int ret = livesList.get(player);
-   if (ret<=0 && infiniteLives)
-   {return 1;}//Never return <0 if infiniteLives is on
-   else
-   {return ret;}
-  }
-  else {return -1;}
- }
- 
- void setLives(String player,int newValue)
- {
-  if (!playerExists(player)) {return;}
-  if (newValue<0) {newValue = 0;}
-  livesList.put(player,newValue);
-  
-  //TODO: Save here?
- }
- 
- void addLives(String player,int lives) {setLives(player,getLives(player)+lives);}
- void subtractLives(String player,int lives) {addLives(player,-lives);}
- 
- //Util
  public String searchPlayer(String targetName)
  {
-  if (!playerExists(targetName))//Try to resolve the name to someone on the server...
+  if (!db.exists(targetName))//Try to resolve the name to someone on the server...
   {
    List<Player> matches = getServer().matchPlayer(targetName);
    if (matches.size()>=1) {return matches.get(0).getName();}
@@ -500,7 +412,7 @@ public class playerLives extends JavaPlugin
    }
    catch (NoClassDefFoundError ex)
    {
-    if (verbose) {System.err.println("["+pluginName+"] Failed to link with iConomy. Trying iConomy 4...");}
+    if (conf.verbose) {System.out.println("["+pluginName+"] Failed to link with iConomy. Trying iConomy 4...");}
     com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
     
     if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
@@ -508,6 +420,7 @@ public class playerLives extends JavaPlugin
      System.out.println("["+playerLives.pluginName+"] Successfully linked with iConomy 4");
      econ = new iConomy4();
     }
+    else if (conf.verbose) {System.err.println("["+pluginName+"] Failed to link with iConomy 4 and iConomy 5!");}
    }
   }
   
