@@ -8,6 +8,7 @@ package com.pathogenstudios.playerlives;
 import java.util.HashMap;
 import java.util.List;
 
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -19,6 +20,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
+import org.getspout.spoutapi.SpoutManager;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -47,6 +49,7 @@ public class playerLives extends JavaPlugin
  private PermissionHandler permissionsPlugin = null;
  private econWrapper econ;
  private dbWrapper db = null;
+ private SpoutManager spout = null;
  
  //Inernal:
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
@@ -54,7 +57,8 @@ public class playerLives extends JavaPlugin
  //Configuration:
  public configMan conf;
  
- //Constructor/Destrctor:
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //Enable / Disable:
  public void onEnable()
  {
   Log.m("Loading Pathogen playerLives...");
@@ -91,6 +95,7 @@ public class playerLives extends JavaPlugin
   Log.v("I'm not even angry...");
  }
  
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  //Event Callbacks:
  public void onDeath(EntityDeathEvent e)
  {
@@ -120,6 +125,12 @@ public class playerLives extends JavaPlugin
   //We can not give them back their stuff yet, just mark the entry as respawned and handle it in onMove...
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
+  
+  if (spout!=null)
+  {
+   SpoutManager.getPlayer(player).sendNotification("Line 1","Line 2",Material.DIRT);
+  }
+  
   if (!checkPermission(player,"canuse")) {return;}
   
   if (invStore.containsKey(player))
@@ -184,6 +195,7 @@ public class playerLives extends JavaPlugin
   }
  }
  
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  //Handle commands
  public boolean onCommand(CommandSender sender,Command command,String label,String[] args)
  {
@@ -310,6 +322,7 @@ public class playerLives extends JavaPlugin
   return false;
  }
  
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  //Util
  boolean checkPermission(Player player,String node)
  {
@@ -336,6 +349,7 @@ public class playerLives extends JavaPlugin
   return targetName;
  }
  
+ //////////////////////////////////////////////
  //External Plugin Support
  public void onPluginEnable(PluginEnableEvent e)
  {
@@ -380,6 +394,10 @@ public class playerLives extends JavaPlugin
   }
   
   //Spout!
-  //if ()
+  if (spout == null && pluginMan.getPlugin("Spout")!=null)
+  {
+   spout = SpoutManager.getInstance();
+   if (spout==null) {Log.m("Successfully linked with Spout");}
+  }
  }
 }
