@@ -33,3 +33,27 @@ commands:
         usage: |
                /<command> [count]
                Example: /<command> [count] | Buy [count] lives for yourself
+permissions:
+    playerlives.*:
+        description: Enables all playerlives permissions 
+        children:
+            playerlives.canuse: true
+            playerlives.checkself: true
+            playerlives.buy: true
+            playerlives.checkothers: true
+            playerlives.change: true
+    playerlives.canuse:
+        default: true
+        description: Determines if the player can use player lives at all
+    playerlives.checkself:
+        default: true
+        description: Determines if the player can check the number of lives they have
+    playerlives.buy:
+        default: true
+        description: Determines if the player can buy lives with the economy.
+    playerlives.checkothers:
+        default: op
+        description: Determines if the player can check other people's life count
+    playerlives.change:
+        default: op
+        description: Determines if the player can change their or other's lives (This applies to set, add, and subtract.)

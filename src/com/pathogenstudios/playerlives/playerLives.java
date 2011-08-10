@@ -27,7 +27,6 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 
 import com.pathogenstudios.playerlives.dbWrappers.*;
 import com.pathogenstudios.playerlives.econWrappers.*;
-
 import com.pathogenstudios.generic.*;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -126,11 +125,6 @@ public class playerLives extends JavaPlugin
   //We have to check the respawn because the entity can keep falling after death.
   Player player = e.getPlayer();
   
-  if (spout!=null)
-  {
-   SpoutManager.getPlayer(player).sendNotification("Line 1","Line 2",Material.DIRT);
-  }
-  
   if (!checkPermission(player,"canuse")) {return;}
   
   if (invStore.containsKey(player))
@@ -140,17 +134,27 @@ public class playerLives extends JavaPlugin
    if (conf.infiniteLives)
    {}//Don't display anything. pathogenPlayerLives is now a static game mechanic.
    else if (lives==1)
-   {player.sendMessage("Welcome back! You only have one more life! Be careful!");}
+   {
+    //player.sendMessage("Welcome back! You only have one more life! Be careful!");
+    sendPlayerNotification(player,"Welcome back!","You have one more life!",Material.DIAMOND_CHESTPLATE,"Welcome back! You only have one more life! Be careful!");
+   }
    else if (lives==0)
-   {player.sendMessage("Welcome back! You have no lives left! Be careful!");}
+   {
+    //player.sendMessage("Welcome back! You have no lives left! Be careful!");
+    sendPlayerNotification(player,"Welcome back!","That was your last life!",Material.OBSIDIAN,"Welcome back! You have no lives left! Be careful!");
+   }
    else
-   {player.sendMessage("Welcome back! You have "+lives+" lives left.");}
+   {
+    //player.sendMessage("Welcome back! You have "+lives+" lives left.");
+    sendPlayerNotification(player,"Welcome back!","You have " + lives + " lives.",Material.DIAMOND_CHESTPLATE,"Welcome back! You have "+lives+" lives left.");
+   }
   }
   else
   {
-   if (!conf.infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
+   /*if (!conf.infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
    player.sendMessage("Your stuff did not come back with you.");
-   player.sendMessage("However, it might still be where you died!");
+   player.sendMessage("However, it might still be where you died!");*/
+   sendPlayerNotification(player,"You are out of lives.","You lost your stuff.",Material.OBSIDIAN,"You ran out of lives, so you lost all your stuff.");
   }
   
   //Death economy punishment:
@@ -301,7 +305,7 @@ public class playerLives extends JavaPlugin
     //Holdings account = iConomy.getAccount(targetName).getHoldings();
     if (econ.getBalance(targetName)<conf.lifeCost*count)
     {
-     sender.sendMessage("You do not have enough"+econ.getCurrency(true));
+     sender.sendMessage("You do not have enough "+econ.getCurrency(true));
      sender.sendMessage("You need "+econ.format(conf.lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
      return true;
     }
@@ -330,12 +334,7 @@ public class playerLives extends JavaPlugin
   if (permissionsPlugin!=null)
   {return permissionsPlugin.has(player,"playerlives."+node);}
   else
-  {
-   if (node=="canuse" || node=="checkself" || node=="buy")
-   {return true;}//Things normal people can use.
-   else//checkothers, change
-   {return player.isOp();}//If not, assume op-only.
-  }
+  {return player.hasPermission("playerlives."+node);}
  }
  final static String accessDenied = "You do not have access to that command.";
  
@@ -349,6 +348,19 @@ public class playerLives extends JavaPlugin
   return targetName;
  }
  
+ public void sendPlayerNotification(Player player, String title, String message, Material icon, String classicMessage)
+ {
+  if (classicMessage == null)
+  {classicMessage = title + " " + message;}
+  
+  if (spout!=null) {SpoutManager.getPlayer(player).sendNotification(title,message,icon);}
+  else
+  {player.sendMessage(classicMessage);}
+ }
+ 
+ public void sendPlayerNotification(Player player, String title, String message, Material icon)
+ {sendPlayerNotification(player,title,message,icon,null);}
+ 
  //////////////////////////////////////////////
  //External Plugin Support
  public void onPluginEnable(PluginEnableEvent e)
@@ -356,26 +368,35 @@ public class playerLives extends JavaPlugin
   //Economy Plugins
   if (!econ.isEnabled())
   {
-   try
+   cosine.boseconomy.BOSEconomy BOSEconomyPlugin = (cosine.boseconomy.BOSEconomy)pluginMan.getPlugin("BOSEconomy");
+   if (BOSEconomyPlugin != null && BOSEconomyPlugin.isEnabled())
    {
-    com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
-    if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
-    {
-     Log.m("Successfully linked with iConomy 5");
-     econ = new iConomy5();
-    }
+    Log.m("Successfully linked with BOSEconomy");
+    econ = new BOSEconomy(BOSEconomyPlugin);
    }
-   catch (NoClassDefFoundError ex)
+   else
    {
-    Log.d("Failed to link with iConomy. Trying iConomy 4...");
-    com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
-    
-    if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
+    try
     {
-     Log.m("Successfully linked with iConomy 4");
-     econ = new iConomy4();
+     com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+     if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
+     {
+      Log.m("Successfully linked with iConomy 5");
+      econ = new iConomy5();
+     }
     }
-    else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
+    catch (NoClassDefFoundError ex)
+    {
+     Log.d("Failed to link with iConomy. Trying iConomy 4...");
+     com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+     
+     if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
+     {
+      Log.m("Successfully linked with iConomy 4");
+      econ = new iConomy4();
+     }
+     else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
+    }
    }
   }
   
