@@ -1,5 +1,6 @@
 package com.pathogenstudios.playerlives.dbWrappers;
 
+import com.pathogenstudios.generic.Log;
 import com.pathogenstudios.playerlives.PropertyHandler;
 import com.pathogenstudios.playerlives.dbWrapper;
 import com.pathogenstudios.playerlives.playerLives;
@@ -25,7 +26,7 @@ public class flatfile extends dbWrapper
  {
   livesDb = new PropertyHandler(parent.getDataFolder()+File.separator+"livesDb.properties");//Created after the dir is made if it does not exist yet.
   
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Load flatfile lives database...");}
+  Log.d("Load flatfile lives database...");
   livesList = new HashMap<String,Integer>();
   try
   {
@@ -40,7 +41,7 @@ public class flatfile extends dbWrapper
   }
   catch (Exception e)
   {
-   System.err.println("["+playerLives.pluginName+"] COULD NOT LOAD LIVES FLATFILE DATABASE!");
+   Log.e("COULD NOT LOAD LIVES FLATFILE DATABASE!");
    e.printStackTrace();
   }
   livesDb.save();
@@ -48,7 +49,7 @@ public class flatfile extends dbWrapper
  
  public void save()
  {
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Saving lives db...");}
+  Log.d("Saving lives db...");
   livesDb.load();
   Iterator<String> itr = livesList.keySet().iterator();
   while(itr.hasNext())

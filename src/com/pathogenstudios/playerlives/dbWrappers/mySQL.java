@@ -1,5 +1,6 @@
 package com.pathogenstudios.playerlives.dbWrappers;
 
+import com.pathogenstudios.generic.Log;
 import com.pathogenstudios.playerlives.dbWrapper;
 import com.pathogenstudios.playerlives.playerLives;
 
@@ -17,7 +18,7 @@ public class mySQL extends dbWrapper
  {
   super(parent);
   
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Starting MySQL Database Engine...");}
+  Log.d("Starting MySQL Database Engine...");
   
   //Make MySQL connection:
   try
@@ -28,7 +29,7 @@ public class mySQL extends dbWrapper
   }
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error initialzing MySQL.");
+   Log.e("Error initialzing MySQL.");
    e.printStackTrace();
    if (db!=null) {try{db.close();}catch (SQLException ex) {}}
    if (con!=null) {try{con.close();}catch (SQLException ex) {}}
@@ -38,7 +39,7 @@ public class mySQL extends dbWrapper
   }
   
   //Check if we need to init the table:
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Checking if table needs to be made...");}
+  Log.d("Checking if table needs to be made...");
   String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = '"+parent.conf.dbDatabase+"' AND table_name = '"+parent.conf.dbTable+"'";
   ResultSet result = null;
   try
@@ -47,31 +48,31 @@ public class mySQL extends dbWrapper
    if (!result.first())//Table does not exist
    {
     result.close();
-    if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Creating table...");}
+    Log.d("Creating table...");
     query = "CREATE TABLE `"+parent.conf.dbTable+"` (`name` VARCHAR(255) NOT NULL,`lives` INT NOT NULL,PRIMARY KEY (`name`))";
     try {db.execute(query);}
     catch (SQLException e)
     {
-     System.err.println("["+playerLives.pluginName+"] Error creating MySQL table.");
-     System.err.println("["+playerLives.pluginName+"] QUERY: "+query);
+     Log.e("Error creating MySQL table.");
+     Log.e("QUERY: "+query);
      e.printStackTrace();
     }
    }
   }
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error checking MySQL table.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: "+query);
+   Log.e("Error checking MySQL table.");
+   Log.e("QUERY: "+query);
    e.printStackTrace();
   }
   if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Done starting MySQL!");}
+  Log.d("Done starting MySQL!");
  }
  public boolean isActive() {return con!=null && db!=null;}
  
  public void close()
  {
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Closing MySQL connection...");}
+  Log.d("Closing MySQL connection...");
   if (db!=null) {try{db.close();}catch (SQLException ex) {ex.printStackTrace();}}
   if (db!=null) {try{con.close();}catch (SQLException ex) {ex.printStackTrace();}}
  }
@@ -89,8 +90,8 @@ public class mySQL extends dbWrapper
   }
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error adding new player to database.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: \""+query+"\"");
+   Log.d("Error adding new player to database.");
+   Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    return false;
   }
@@ -109,8 +110,8 @@ public class mySQL extends dbWrapper
   }
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error checking if player exists in the database.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: \""+query+"\"");
+   Log.d("Error checking if player exists in the database.");
+   Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
    return false;
@@ -135,8 +136,8 @@ public class mySQL extends dbWrapper
   }
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error checking player's number of lives.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: \""+query+"\"");
+   Log.d("Error checking player's number of lives.");
+   Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
    return -1;
@@ -149,8 +150,8 @@ public class mySQL extends dbWrapper
   try {return db.execute(query);}
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error setting player's lives.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: \""+query+"\"");
+   Log.d("Error setting player's lives.");
+   Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    return false;
   }
@@ -162,8 +163,8 @@ public class mySQL extends dbWrapper
   try {return db.execute(query);}
   catch (SQLException e)
   {
-   System.err.println("["+playerLives.pluginName+"] Error incrementing/decrementing player's lives.");
-   System.err.println("["+playerLives.pluginName+"] QUERY: \""+query+"\"");
+   Log.d("Error incrementing/decrementing player's lives.");
+   Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    return false;
   }

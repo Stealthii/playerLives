@@ -2,6 +2,8 @@ package com.pathogenstudios.playerlives;
 
 import org.bukkit.util.config.Configuration;
 
+import com.pathogenstudios.generic.*;
+
 public class configMan
 {
  //Internals:
@@ -34,7 +36,7 @@ public class configMan
  public void load()
  {
   //Get configuration
-  System.out.println("["+playerLives.pluginName+"] Loading config...");
+  Log.m("Loading config...");
   lifeCost = conf.getDouble("lifeCost",100.0);
   deathPunishmentCost = conf.getDouble("deathPunishmentCost",0.0);
   minBalanceForPunishment = conf.getDouble("minBalanceForPunishment",100.0);
@@ -55,7 +57,7 @@ public class configMan
  
  public void save()
  {
-  System.out.println("["+playerLives.pluginName+"] Saving config...");
+  Log.m("Saving config...");
   conf.load();
   conf.setProperty("lifeCost",lifeCost);
   conf.setProperty("deathPunishmentCost",deathPunishmentCost);

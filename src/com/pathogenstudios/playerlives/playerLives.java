@@ -15,7 +15,6 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -29,7 +28,10 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.pathogenstudios.playerlives.dbWrappers.*;
 import com.pathogenstudios.playerlives.econWrappers.*;
 
-//Method for temporarily storing inventory data
+import com.pathogenstudios.generic.*;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Inventory + Meta data needed by pathogenPlayerLives container:
 class inventoryStore
 {
  private ItemStack[] contents;
@@ -38,13 +40,10 @@ class inventoryStore
  private ItemStack leggings;
  private ItemStack boots;
  private boolean isRespawned = false;//Used by onMove to allow the inventory to come back...
- private playerLives parent;
  
- public inventoryStore(playerLives parent) {this.parent = parent;}
- 
- public void copy(PlayerInventory inv)
+ public inventoryStore(PlayerInventory inv)
  {
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Saving inventory...");}
+  Log.d("Saving inventory...");
   contents = inv.getContents().clone();
   helmet = inv.getHelmet();
   chestplate = inv.getChestplate();
@@ -54,7 +53,7 @@ class inventoryStore
  
  public void paste(PlayerInventory inv)
  {
-  if (parent.conf.verbose) {System.out.println("["+playerLives.pluginName+"] Restoring inventory...");}
+  Log.d("Restoring inventory...");
   inv.setContents(contents);
   if (helmet!=null && helmet.getTypeId()!=0)         {inv.setHelmet(helmet);}
   if (chestplate!=null && chestplate.getTypeId()!=0) {inv.setChestplate(chestplate);}
@@ -66,24 +65,28 @@ class inventoryStore
  public boolean isRespawned() {return isRespawned;}
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main class
 public class playerLives extends JavaPlugin
 {
- public static final String pluginName = "pathogenPlayerLives";
+ public playerLives()
+ {
+  Log.pluginName = "pathogenPlayerLives";
+ }
  
- //Listeners
+ //Bukkit Listeners:
  private plPlayerListener playerListener = new plPlayerListener(this);
  private plEntityListener entityListener = new plEntityListener(this);
  private plServerListener serverListener = new plServerListener(this);
  
- //Plugins
+ //Plugins:
  private PluginManager pluginMan;
  private PermissionHandler permissionsPlugin = null;
  private econWrapper econ;
  private dbWrapper db = null;
  
- //Internal
- private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
+ //Inernal:
+ private HashMap<Player,inventoryStore> invStore2 = new HashMap<Player,inventoryStore>();
  
  //Configuration:
  public configMan conf;
@@ -91,7 +94,7 @@ public class playerLives extends JavaPlugin
  //Constructor/Destrctor:
  public void onEnable()
  {
-  System.out.println("["+pluginName+"] Loading Pathogen playerLives...");
+  Log.m("Loading Pathogen playerLives...");
   
   pluginMan = getServer().getPluginManager();
   econ = new econWrapper();//Dummy wrapper until a compatible econ plugin is detected.
@@ -101,6 +104,7 @@ public class playerLives extends JavaPlugin
   
   //Config Loading and such
   conf = new configMan(this);
+  Log.verbose = conf.verbose;
   
   //Load Lives Db
   if (conf.dbDriver.compareTo("mysql")==0) {db = new mySQL(this);}
@@ -114,18 +118,18 @@ public class playerLives extends JavaPlugin
   pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE,serverListener,Event.Priority.Monitor,this);
   
-  System.out.println("["+pluginName+"] Done loading Pathogen playerLives.");
+  Log.m("Done loading Pathogen playerLives.");
  }
  
  public void onDisable()
  {
-  System.out.println("["+pluginName+"] Unloading Pathogen playerLives...");
+  Log.m("Unloading Pathogen playerLives...");
   db.close();
-  if (conf.verbose) {System.out.println("["+pluginName+"] I'm not even angry...");}
+  Log.v("I'm not even angry...");
  }
  
  //Event Callbacks:
- public void onDamage(EntityDamageEvent e)
+ /*public void onDamage(EntityDamageEvent e)
  {
   Player player = (Player)e.getEntity();
   String playerName = player.getName();
@@ -149,7 +153,7 @@ public class playerLives extends JavaPlugin
     if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");}
    }
   }
- }
+ }*/
  
  public void onDeath(EntityDeathEvent e)
  {
@@ -160,22 +164,18 @@ public class playerLives extends JavaPlugin
   
   if (db.get(playerName)>=1)
   {
+   //Save old inventory:
+   invStore2.put(player,new inventoryStore(player.getInventory()));
+   
    //Suppress Drops
-   if (invStore.containsKey(player))//Don't suppress drops unless we got them!
-   {
-    if (conf.verbose) {System.out.println("["+pluginName+"] Supressing drops for "+playerName);}
-    for(int i=0;i<e.getDrops().size();i++)
-    {e.getDrops().remove(i);i--;}
-   }
-   else if (conf.verbose)
-   {System.out.println("["+pluginName+"] Not supressing drops for "+playerName+" because we did not capture them.");}
+   Log.d("Supressing drops for "+playerName);
+   for(int i=0;i<e.getDrops().size();i++)
+   {e.getDrops().remove(i);i--;}
    
    if (!conf.infiniteLives) {db.take(playerName,1);}//Do the subtraction of a life.
   }
   else
-  {
-   if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is out of lives, drops will not be surpressed.");}
-  }
+  {Log.d("Player "+playerName+" is out of lives, drops will not be surpressed.");}
  }
  
  public void onRespawn(PlayerRespawnEvent e)
@@ -185,9 +185,9 @@ public class playerLives extends JavaPlugin
   Player player = e.getPlayer();
   if (!checkPermission(player,"canuse")) {return;}
   
-  if (invStore.containsKey(player))
+  if (invStore2.containsKey(player))
   {
-   invStore.get(player).setIsRespawned(true);
+   invStore2.get(player).setIsRespawned(true);
    int lives = db.get(player.getName());
    if (conf.infiniteLives)
    {}//Don't display anything. pathogenPlayerLives is now a static game mechanic.
@@ -205,14 +205,14 @@ public class playerLives extends JavaPlugin
    player.sendMessage("However, it might still be where you died!");
   }
   
-  //Death iConomy punishment:
+  //Death economy punishment:
   if (econ.isEnabled() && conf.deathPunishmentCost>0)
   {
    double oldBal = econ.getBalance(player);
    if (oldBal>=conf.minBalanceForPunishment)
    {
     double toTake = conf.deathPunishmentCost;
-    if (oldBal-toTake<0) {toTake = oldBal;}//Don't know if iConomy allows debt, but we'll prevent it.
+    if (oldBal-toTake<0) {toTake = oldBal;}//In case the economy allows debt, we avoid creating it.
     econ.subBalance(player,toTake);
     player.sendMessage("You also lost "+econ.format(toTake)+" leaving you with "+econ.format(econ.getBalance(player))+".");
    }
@@ -224,25 +224,25 @@ public class playerLives extends JavaPlugin
   Player player = e.getPlayer();
   
   //Give them their stuff back (if they just respawned and have logged stuff)
-  if (invStore.containsKey(player) && invStore.get(player).isRespawned())
+  if (invStore2.containsKey(player) && invStore2.get(player).isRespawned())
   {
    if (!checkPermission(player,"canuse")) {return;}
-   invStore.get(player).paste(player.getInventory());
-   invStore.remove(player);
+   invStore2.get(player).paste(player.getInventory());
+   invStore2.remove(player);
   }
  }
  
  public void onJoin(PlayerJoinEvent e)
  {
-  if (conf.verbose) {System.out.println("["+pluginName+"] Player joined! '"+e.getPlayer().getName()+"'");}
+  Log.d("Player joined! '"+e.getPlayer().getName()+"'");
   Player player = e.getPlayer();
   if (db.exists(player))
   {
-   if (conf.verbose) {System.out.println("["+pluginName+"] Recognized player! They have "+db.get(player.getName())+" lives!");}
+   Log.d("Recognized player! They have "+db.get(player.getName())+" lives!");
   }
   else
   {
-   if (conf.verbose) {System.out.println("["+pluginName+"] Unrecognized player! Giving them "+conf.defaultLives+" lives!");}
+   Log.d("Unrecognized player! Giving them "+conf.defaultLives+" lives!");
    db.addPlayer(player,conf.defaultLives);
   }
  }
@@ -365,7 +365,7 @@ public class playerLives extends JavaPlugin
    else
    {
     sender.sendMessage("No player named "+targetName+".");
-    System.err.print("["+pluginName+"] Player '"+targetName+"' does not exist!");
+    Log.e("Player '"+targetName+"' does not exist!");
    }
    return true;
   }
@@ -410,21 +410,21 @@ public class playerLives extends JavaPlugin
     com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
     if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
     {
-     System.out.println("["+playerLives.pluginName+"] Successfully linked with iConomy 5");
+     Log.m("Successfully linked with iConomy 5");
      econ = new iConomy5();
     }
    }
    catch (NoClassDefFoundError ex)
    {
-    if (conf.verbose) {System.out.println("["+pluginName+"] Failed to link with iConomy. Trying iConomy 4...");}
+    Log.d("Failed to link with iConomy. Trying iConomy 4...");
     com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
     
     if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
     {
-     System.out.println("["+playerLives.pluginName+"] Successfully linked with iConomy 4");
+     Log.m("Successfully linked with iConomy 4");
      econ = new iConomy4();
     }
-    else if (conf.verbose) {System.err.println("["+pluginName+"] Failed to link with iConomy 4 and iConomy 5!");}
+    else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
    }
   }
   
@@ -436,7 +436,7 @@ public class playerLives extends JavaPlugin
    if (tempPerm!=null)
    {
     permissionsPlugin = tempPerm.getHandler();
-    System.out.println("["+pluginName+"] Successfully linked with Permissions");
+    Log.m("Successfully linked with Permissions");
    }
    else
    {permissionsPlugin = null;}
