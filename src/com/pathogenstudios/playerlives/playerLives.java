@@ -19,8 +19,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -29,41 +27,6 @@ import com.pathogenstudios.playerlives.dbWrappers.*;
 import com.pathogenstudios.playerlives.econWrappers.*;
 
 import com.pathogenstudios.generic.*;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Inventory + Meta data needed by pathogenPlayerLives container:
-class inventoryStore
-{
- private ItemStack[] contents;
- private ItemStack helmet;
- private ItemStack chestplate;
- private ItemStack leggings;
- private ItemStack boots;
- private boolean isRespawned = false;//Used by onMove to allow the inventory to come back...
- 
- public inventoryStore(PlayerInventory inv)
- {
-  Log.d("Saving inventory...");
-  contents = inv.getContents().clone();
-  helmet = inv.getHelmet();
-  chestplate = inv.getChestplate();
-  leggings = inv.getLeggings();
-  boots = inv.getBoots();
- }
- 
- public void paste(PlayerInventory inv)
- {
-  Log.d("Restoring inventory...");
-  inv.setContents(contents);
-  if (helmet!=null && helmet.getTypeId()!=0)         {inv.setHelmet(helmet);}
-  if (chestplate!=null && chestplate.getTypeId()!=0) {inv.setChestplate(chestplate);}
-  if (leggings!=null && leggings.getTypeId()!=0)     {inv.setLeggings(leggings);}
-  if (boots!=null && boots.getTypeId()!=0)           {inv.setBoots(boots);}
- }
- 
- public void setIsRespawned(boolean isRespawned) {this.isRespawned = isRespawned;}
- public boolean isRespawned() {return isRespawned;}
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main class
@@ -86,7 +49,7 @@ public class playerLives extends JavaPlugin
  private dbWrapper db = null;
  
  //Inernal:
- private HashMap<Player,inventoryStore> invStore2 = new HashMap<Player,inventoryStore>();
+ private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
  
  //Configuration:
  public configMan conf;
@@ -129,32 +92,6 @@ public class playerLives extends JavaPlugin
  }
  
  //Event Callbacks:
- /*public void onDamage(EntityDamageEvent e)
- {
-  Player player = (Player)e.getEntity();
-  String playerName = player.getName();
-  
-  if (!checkPermission(player,"canuse")) {return;}
-  if (player.getHealth()<1) {return;}//Player is already dead
-  
-  //If they will be dying at the end of this event, store their stuff!
-  if (player.getHealth()-e.getDamage()<1)
-  {
-   if (db.get(playerName)>=1)
-   {
-    if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! Save their stuff!");}
-    inventoryStore newStore = new inventoryStore(this);
-    newStore.copy(player.getInventory());
-    invStore.put(player,newStore);
-    //Will subtract a life during the "onDeath" event.
-   }
-   else
-   {
-    if (conf.verbose) {System.out.println("["+pluginName+"] Player "+playerName+" is gonna die! They are out of lives so their stuff will not be saved.");}
-   }
-  }
- }*/
- 
  public void onDeath(EntityDeathEvent e)
  {
   Player player = (Player)e.getEntity();
@@ -165,7 +102,7 @@ public class playerLives extends JavaPlugin
   if (db.get(playerName)>=1)
   {
    //Save old inventory:
-   invStore2.put(player,new inventoryStore(player.getInventory()));
+   invStore.put(player,new inventoryStore(player.getInventory()));
    
    //Suppress Drops
    Log.d("Supressing drops for "+playerName);
@@ -185,9 +122,9 @@ public class playerLives extends JavaPlugin
   Player player = e.getPlayer();
   if (!checkPermission(player,"canuse")) {return;}
   
-  if (invStore2.containsKey(player))
+  if (invStore.containsKey(player))
   {
-   invStore2.get(player).setIsRespawned(true);
+   invStore.get(player).setIsRespawned(true);
    int lives = db.get(player.getName());
    if (conf.infiniteLives)
    {}//Don't display anything. pathogenPlayerLives is now a static game mechanic.
@@ -224,11 +161,11 @@ public class playerLives extends JavaPlugin
   Player player = e.getPlayer();
   
   //Give them their stuff back (if they just respawned and have logged stuff)
-  if (invStore2.containsKey(player) && invStore2.get(player).isRespawned())
+  if (invStore.containsKey(player) && invStore.get(player).isRespawned())
   {
    if (!checkPermission(player,"canuse")) {return;}
-   invStore2.get(player).paste(player.getInventory());
-   invStore2.remove(player);
+   invStore.get(player).paste(player.getInventory());
+   invStore.remove(player);
   }
  }
  
@@ -441,5 +378,8 @@ public class playerLives extends JavaPlugin
    else
    {permissionsPlugin = null;}
   }
+  
+  //Spout!
+  //if ()
  }
 }
