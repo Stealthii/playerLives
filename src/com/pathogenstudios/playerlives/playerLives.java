@@ -21,6 +21,8 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.getspout.spoutapi.SpoutManager;
+import org.getspout.spoutapi.gui.*;
+import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -52,6 +54,7 @@ public class playerLives extends JavaPlugin
  
  //Inernal:
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
+ private HashMap<Player,GenericLabel> hudLabels = null;
  
  //Configuration:
  public configMan conf;
@@ -197,6 +200,42 @@ public class playerLives extends JavaPlugin
    Log.d("Unrecognized player! Giving them "+conf.defaultLives+" lives!");
    db.addPlayer(player,conf.defaultLives);
   }
+  
+  if (spout != null)
+  {
+   if (hudLabels == null)
+   {
+    hudLabels = new HashMap<Player,GenericLabel>();
+   }
+   
+   GenericLabel newLbl = new GenericLabel("");
+   newLbl.setHexColor(Integer.parseInt("FFFFFF", 16)).setX(10).setY(10);
+   newLbl.setText("");
+   newLbl.setDirty(true);
+   
+   SpoutPlayer sp = SpoutManager.getPlayer(player);
+   sp.getMainScreen().attachWidget(newLbl);
+   
+   hudLabels.put(player,newLbl);
+   onNumLivesChange(player.getName());
+  }
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //Internal callbacks
+ public void onNumLivesChange(String playerName)
+ {
+  Player player = getServer().getPlayer(playerName);
+  
+  if (spout == null || hudLabels.get(player)==null)
+  {
+   Log.d("No player in hud label list or spout is off.");
+   return;
+  }
+  Log.d("Updating player " + playerName + "'s Spout status label.");
+  
+  ((GenericLabel)hudLabels.get(player)).setText("Lives: " + db.get(player)).setDirty(true);
+  SpoutManager.getPlayer(player).getMainScreen().setDirty(true);
  }
  
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

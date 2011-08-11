@@ -147,26 +147,32 @@ public class mySQL extends dbWrapper
  public boolean set(String player, int lives)
  {
   String query = "UPDATE `"+parent.conf.dbTable+"` SET `lives` = '"+lives+"' WHERE `name` = '"+player+"' LIMIT 1";
-  try {return db.execute(query);}
+  boolean ret = false;
+  try {ret =  db.execute(query);}
   catch (SQLException e)
   {
    Log.d("Error setting player's lives.");
    Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
-   return false;
+   ret =  false;
   }
+  parent.onNumLivesChange(player);
+  return ret;
  }
  
  public boolean give(String player, int lives)//MySQL optimized give function
  {
   String query = "UPDATE `"+parent.conf.dbTable+"` SET `lives` = `lives`+'"+lives+"' WHERE `name` = '"+player+"' LIMIT 1";
-  try {return db.execute(query);}
+  boolean ret = false;
+  try {ret = db.execute(query);}
   catch (SQLException e)
   {
    Log.d("Error incrementing/decrementing player's lives.");
    Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
-   return false;
+   ret = false;
   }
+  parent.onNumLivesChange(player);
+  return ret;
  }
 }
