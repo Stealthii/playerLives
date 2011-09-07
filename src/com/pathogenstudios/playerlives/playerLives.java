@@ -21,8 +21,8 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.getspout.spoutapi.SpoutManager;
-import org.getspout.spoutapi.gui.*;
-import org.getspout.spoutapi.player.SpoutPlayer;
+//import org.getspout.spoutapi.gui.*;
+//import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -54,7 +54,7 @@ public class playerLives extends JavaPlugin
  
  //Inernal:
  private HashMap<Player,inventoryStore> invStore = new HashMap<Player,inventoryStore>();
- private HashMap<Player,GenericLabel> hudLabels = null;
+ //private HashMap<Player,GenericLabel> hudLabels = null;
  
  //Configuration:
  public configMan conf;
@@ -203,7 +203,8 @@ public class playerLives extends JavaPlugin
   
   if (spout != null)
   {
-   if (hudLabels == null)
+   //TODO: Make this not NEED spout but allow spout.
+   /*if (hudLabels == null)
    {
     hudLabels = new HashMap<Player,GenericLabel>();
    }
@@ -213,10 +214,10 @@ public class playerLives extends JavaPlugin
    newLbl.setText("");
    newLbl.setDirty(true);
    
-   SpoutPlayer sp = SpoutManager.getPlayer(player);
-   sp.getMainScreen().attachWidget(newLbl);
+   //SpoutPlayer sp = SpoutManager.getPlayer(player);
+   //sp.getMainScreen().attachWidget(newLbl);
    
-   hudLabels.put(player,newLbl);
+   hudLabels.put(player,newLbl);*/
    onNumLivesChange(player.getName());
   }
  }
@@ -225,9 +226,10 @@ public class playerLives extends JavaPlugin
  //Internal callbacks
  public void onNumLivesChange(String playerName)
  {
-  Player player = getServer().getPlayer(playerName);
+  //Player player = getServer().getPlayer(playerName);
   
-  if (spout == null || hudLabels.get(player)==null)
+  //TODO: Make this not NEED spout but allow spout.
+  /*if (spout == null || hudLabels.get(player)==null)
   {
    Log.d("No player in hud label list or spout is off.");
    return;
@@ -235,7 +237,7 @@ public class playerLives extends JavaPlugin
   Log.d("Updating player " + playerName + "'s Spout status label.");
   
   ((GenericLabel)hudLabels.get(player)).setText("Lives: " + db.get(player)).setDirty(true);
-  SpoutManager.getPlayer(player).getMainScreen().setDirty(true);
+  SpoutManager.getPlayer(player).getMainScreen().setDirty(true);*/
  }
  
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -360,6 +362,50 @@ public class playerLives extends JavaPlugin
     Log.e("Player '"+targetName+"' does not exist!");
    }
    return true;
+  }
+  else if (commandName.compareToIgnoreCase("playerlives") == 0 || commandName.compareToIgnoreCase("ppl") == 0)
+  {
+   String subCommand = "";
+   if (args.length < 1)
+   {
+    sender.sendMessage("You must specifiy a subcommand.");
+    subCommand = "help";
+   }
+   else
+   {
+    subCommand = args[0].toLowerCase();
+   }
+   
+   
+   
+   if (subCommand.equalsIgnoreCase("enable"))
+   {
+    sender.sendMessage("Unimplemented");
+    return true;
+   }
+   else if (subCommand.equalsIgnoreCase("disable"))
+   {
+    sender.sendMessage("Unimplemented");
+    return true;
+   }
+   else if (subCommand.equalsIgnoreCase("reload"))
+   {
+    sender.sendMessage("Reloading the plugin...");
+    onDisable();
+    onEnable();
+    sender.sendMessage("Pathogen Player Lives was successfully reloaded.");
+    return true;
+   }
+   else if (subCommand.equalsIgnoreCase("help"))
+   {
+    sender.sendMessage("Mmmmmm....so you're a bitch. that likes...BANANAS?!");
+    return true;
+   }
+   else
+   {
+    sender.sendMessage("Invalid subcommand '" + subCommand + "'");
+    return false;
+   }
   }
   
   return false;

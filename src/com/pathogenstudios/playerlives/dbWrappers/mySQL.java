@@ -17,8 +17,13 @@ public class mySQL extends dbWrapper
  public mySQL(playerLives parent)
  {
   super(parent);
-  
-  Log.d("Starting MySQL Database Engine...");
+  open(true);
+ }
+ 
+ public void open() {open(false);}
+ public void open(boolean firstTime)
+ {
+  Log.d(firstTime?"Starting MySQL Database Engine...":"Reconnecting to lost MySQL Database server...");
   
   //Make MySQL connection:
   try
@@ -68,13 +73,33 @@ public class mySQL extends dbWrapper
   if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
   Log.d("Done starting MySQL!");
  }
- public boolean isActive() {return con!=null && db!=null;}
  
  public void close()
  {
   Log.d("Closing MySQL connection...");
   if (db!=null) {try{db.close();}catch (SQLException ex) {ex.printStackTrace();}}
-  if (db!=null) {try{con.close();}catch (SQLException ex) {ex.printStackTrace();}}
+  if (con!=null) {try{con.close();}catch (SQLException ex) {ex.printStackTrace();}}
+ }
+ 
+ public boolean isActive() {return con!=null && db!=null;}//TODO: Update this to have similar behavior to checkConnection? Need to check where this is used.
+ 
+ public void checkConnection()
+ {
+  boolean thereIsntAConnection = false;
+  
+  try {if ((db==null || db.isClosed()) || (con==null || con.isClosed())) {thereIsntAConnection = true;}}
+  catch (SQLException ex)
+  {
+   Log.d("Error checking MySQL connection state.");
+   ex.printStackTrace();
+   thereIsntAConnection = true;
+  }
+  
+  if (thereIsntAConnection)
+  {
+   Log.e("Connection to MySQL server lost, attempting to reconnect...");
+   open();
+  }
  }
  
  public void load() {}//Nothing to do.
@@ -82,6 +107,8 @@ public class mySQL extends dbWrapper
  
  public boolean addPlayer(String player, int lives)
  {
+  checkConnection();
+  
   String query = "INSERT INTO `"+parent.conf.dbTable+"` (`name`,`lives`) VALUES ('"+player+"', '"+lives+"');";
   try
   {
@@ -99,6 +126,8 @@ public class mySQL extends dbWrapper
  
  public boolean exists(String player)
  {
+  checkConnection();
+  
   String query = "SELECT `lives` FROM `"+parent.conf.dbTable+"` WHERE `name`='"+player+"' LIMIT 1";
   ResultSet result = null;
   try
@@ -120,6 +149,8 @@ public class mySQL extends dbWrapper
  
  public int get(String player)
  {
+  checkConnection();
+  
   String query = "SELECT `lives` FROM `"+parent.conf.dbTable+"` WHERE `name`='"+player+"' LIMIT 1";
   ResultSet result = null;
   try
@@ -146,6 +177,8 @@ public class mySQL extends dbWrapper
  
  public boolean set(String player, int lives)
  {
+  checkConnection();
+  
   String query = "UPDATE `"+parent.conf.dbTable+"` SET `lives` = '"+lives+"' WHERE `name` = '"+player+"' LIMIT 1";
   boolean ret = false;
   try {ret =  db.execute(query);}
@@ -162,6 +195,8 @@ public class mySQL extends dbWrapper
  
  public boolean give(String player, int lives)//MySQL optimized give function
  {
+  checkConnection();
+  
   String query = "UPDATE `"+parent.conf.dbTable+"` SET `lives` = `lives`+'"+lives+"' WHERE `name` = '"+player+"' LIMIT 1";
   boolean ret = false;
   try {ret = db.execute(query);}

@@ -34,6 +34,13 @@ commands:
         usage: |
                /<command> [count]
                Example: /<command> [count] | Buy [count] lives for yourself
+    playerlives:
+        aliases: [ppl]
+        description: Administer the Pathogen Player Lives Plugin
+        usage: |
+            /<command> subcommand [arguments...]
+            Example: /command disable -n Pathogen_David | Disables the effects of Pathogen Player Lives for player Pathogen_David and does not announce it.
+            Example: /command disable -t 1h | Disables the effects of Pathogen Player Lives for everyone for one hour
 permissions:
     playerlives.*:
         description: Enables all playerlives permissions 
