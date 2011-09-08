@@ -87,6 +87,14 @@ public class playerLives extends JavaPlugin
   pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN,playerListener,Event.Priority.Normal,this);
   pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE,serverListener,Event.Priority.Monitor,this);
   
+  //Simulate onJoin events for all players currently online
+  Player[] onlinePlayers = getServer().getOnlinePlayers();
+  
+  for (Player onlinePlayer : onlinePlayers)
+  {
+   playerListener.onPlayerJoin(new PlayerJoinEvent(onlinePlayer,""));
+  }
+  
   Log.m("Done loading Pathogen playerLives.");
  }
  

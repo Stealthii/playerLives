@@ -9,16 +9,27 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class flatfile extends dbWrapper
 {
  private PropertyHandler livesDb=null;
  private HashMap<String,Integer> livesList;
+ private Timer autoSaveTimer = null;
  
  public flatfile(playerLives parent)
  {
   super(parent);
   load();
+  
+  Log.d(Integer.toString(parent.conf.flatFileAutosaveInterval));
+  if (parent.conf.flatFileAutosaveInterval>0)
+  {
+   Log.d("Setting up flatfile autosave...");
+   autoSaveTimer = new Timer();
+   scheduleAutoSave();
+  }
  }
  public boolean isActive() {return livesDb!=null;}
  
@@ -58,6 +69,21 @@ public class flatfile extends dbWrapper
    livesDb.setInt(key,livesList.get(key));
   }
   livesDb.save();
+ }
+ 
+ class AutoSaveTask extends TimerTask
+ {
+  public void run()
+  {
+   Log.m("Flatfile database autosaving...");
+   save();
+   scheduleAutoSave();
+  }
+ }
+ 
+ private void scheduleAutoSave()
+ {
+  autoSaveTimer.schedule(new AutoSaveTask(),parent.conf.flatFileAutosaveInterval * 1000);
  }
  
  public boolean addPlayer(String player,int lives) {livesList.put(player,lives);return true;}

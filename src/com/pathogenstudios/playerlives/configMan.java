@@ -17,6 +17,7 @@ public class configMan
  public int defaultLives;//Default number of lives a new player receives
  public boolean verbose;//Verbose logging mode
  public boolean infiniteLives;//Infinite lives mode - disabled buying mechanic.
+ public int flatFileAutosaveInterval;//How many seconds to wait between flatfile database saves. 0 to disable autosave.
  
  public String dbDriver;//Database driver {flatfile,mysql,sqlite}
  public String dbHost;
@@ -43,6 +44,7 @@ public class configMan
   defaultLives = conf.getInt("defaultLives",3);
   verbose = conf.getBoolean("verbose",false);
   infiniteLives = conf.getBoolean("infiniteLives",false);
+  flatFileAutosaveInterval = conf.getInt("flatFileAutosaveInterval",0);
   
   dbDriver = conf.getString("dbDriver","flatfile");
   dbHost = conf.getString("dbHost","localhost");
@@ -65,6 +67,7 @@ public class configMan
   conf.setProperty("defaultLives",defaultLives);
   conf.setProperty("verbose",verbose);
   conf.setProperty("infiniteLives",infiniteLives);
+  conf.setProperty("flatFileAutosaveInterval",flatFileAutosaveInterval);
   
   conf.setProperty("dbDriver",dbDriver);
   conf.setProperty("dbHost",dbHost);
