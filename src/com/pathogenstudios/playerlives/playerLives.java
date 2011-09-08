@@ -446,7 +446,7 @@ public class playerLives extends JavaPlugin
   if (classicMessage == null)
   {classicMessage = title + " " + message;}
   
-  if (spout!=null) {SpoutManager.getPlayer(player).sendNotification(title,message,icon);}
+  if (spout!=null && SpoutManager.getPlayer(player).isSpoutCraftEnabled()) {SpoutManager.getPlayer(player).sendNotification(title,message,icon);}
   else
   {player.sendMessage(classicMessage);}
  }
