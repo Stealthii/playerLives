@@ -17,6 +17,7 @@ public class flatfile extends dbWrapper
  private PropertyHandler livesDb=null;
  private HashMap<String,Integer> livesList;
  private Timer autoSaveTimer = null;
+ private boolean isDirty = true;
  
  public flatfile(playerLives parent)
  {
@@ -69,14 +70,18 @@ public class flatfile extends dbWrapper
    livesDb.setInt(key,livesList.get(key));
   }
   livesDb.save();
+  isDirty = false;
  }
  
  class AutoSaveTask extends TimerTask
  {
   public void run()
   {
-   Log.m("Flatfile database autosaving...");
-   save();
+   if (isDirty == true)
+   {
+    Log.m("Flatfile database autosaving...");
+    save();
+   }
    scheduleAutoSave();
   }
  }
@@ -84,6 +89,12 @@ public class flatfile extends dbWrapper
  private void scheduleAutoSave()
  {
   autoSaveTimer.schedule(new AutoSaveTask(),parent.conf.flatFileAutosaveInterval * 1000);
+ }
+ 
+ public void close()
+ {
+  autoSaveTimer.cancel();
+  super.close();
  }
  
  public boolean addPlayer(String player,int lives) {livesList.put(player,lives);return true;}
@@ -108,6 +119,7 @@ public class flatfile extends dbWrapper
   if (!exists(player)) {return false;}
   if (lives<0) {lives = 0;}
   livesList.put(player,lives);
+  isDirty = true;
   return true;
  }
 }
