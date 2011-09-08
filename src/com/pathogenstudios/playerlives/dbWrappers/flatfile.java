@@ -64,16 +64,17 @@ public class flatfile extends dbWrapper
  public boolean exists(String player) {return livesList.containsKey(player);}
  
  public int get(String player)
-  {
+ {
+  int ret = -1;
+  
   if (exists(player))
-  {
-   int ret = livesList.get(player);
-   if (ret<=0 && parent.conf.infiniteLives)
-   {return 1;}//Never return <0 if infiniteLives is on
-   else
-   {return ret;}
-  }
-  else {return -1;}
+  {ret = livesList.get(player);}
+  else
+  {ret = -1;}
+  
+  if (ret<=0 && parent.conf.infiniteLives) {ret = 1;}
+  
+  return ret;
  }
  
  public boolean set(String player,int lives)

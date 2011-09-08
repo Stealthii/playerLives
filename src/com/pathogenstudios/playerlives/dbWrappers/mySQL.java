@@ -153,17 +153,15 @@ public class mySQL extends dbWrapper
   
   String query = "SELECT `lives` FROM `"+parent.conf.dbTable+"` WHERE `name`='"+player+"' LIMIT 1";
   ResultSet result = null;
+  int ret = -1;
   try
   {
    result = db.executeQuery(query);
-   int ret = -1;
    if (result.first())//If the player exists at all
    {
     ret = result.getInt(1);
-    if (ret<=0 && parent.conf.infiniteLives) {ret = 1;}
    }
    result.close();
-   return ret;
   }
   catch (SQLException e)
   {
@@ -171,8 +169,12 @@ public class mySQL extends dbWrapper
    Log.d("QUERY: \""+query+"\"");
    e.printStackTrace();
    if (result!=null) {try{result.close();}catch (SQLException ex) {ex.printStackTrace();}}
-   return -1;
+   ret = -1;
   }
+  
+  if (ret<=0 && parent.conf.infiniteLives) {ret = 1;}
+  
+  return ret;
  }
  
  public boolean set(String player, int lives)
