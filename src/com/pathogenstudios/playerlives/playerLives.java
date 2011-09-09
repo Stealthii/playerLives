@@ -522,7 +522,7 @@ public class playerLives extends JavaPlugin
   if (spout == null && pluginMan.getPlugin("Spout")!=null)
   {
    spout = SpoutManager.getInstance();
-   if (spout==null) {Log.m("Successfully linked with Spout");}
+   if (spout!=null) {Log.m("Successfully linked with Spout");}
   }
  }
 }
