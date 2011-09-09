@@ -384,8 +384,6 @@ public class playerLives extends JavaPlugin
     subCommand = args[0].toLowerCase();
    }
    
-   
-   
    if (subCommand.equalsIgnoreCase("enable"))
    {
     sender.sendMessage("Unimplemented");
@@ -480,6 +478,7 @@ public class playerLives extends JavaPlugin
     }
     catch (NoClassDefFoundError ex1)
     {
+     Log.m("Failed to link with iConomy 6. Trying iConomy 5...");
      try
      {
       com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
@@ -491,7 +490,7 @@ public class playerLives extends JavaPlugin
      }
      catch (NoClassDefFoundError ex2)
      {
-      Log.d("Failed to link with iConomy. Trying iConomy 4...");
+      Log.m("Failed to link with iConomy 5. Trying iConomy 4...");
       com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
       
       if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
@@ -499,7 +498,7 @@ public class playerLives extends JavaPlugin
        Log.m("Successfully linked with iConomy 4");
        econ = new iConomy4();
       }
-      else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
+      else {Log.e("Failed to link with iConomy 4 and iConomy 5!");}
      }
     }
    }
