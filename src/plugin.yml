@@ -1,8 +1,8 @@
 name: playerLives
 main: com.pathogenstudios.playerlives.playerLives
-version: 1.5.1
+version: 1.5.1.1
 author: Pathogen_David
-depend: [Spout]
+#depend: [Spout]
 
 commands:
     lives:

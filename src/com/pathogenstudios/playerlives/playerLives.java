@@ -355,7 +355,7 @@ public class playerLives extends JavaPlugin
     if (econ.getBalance(targetName)<conf.lifeCost*count)
     {
      sender.sendMessage("You do not have enough "+econ.getCurrency(true));
-     sender.sendMessage("You need "+econ.format(conf.lifeCost*count)+(count>1?"to buy "+count+" lives.":" to buy a life."));
+     sender.sendMessage("You need "+econ.format(conf.lifeCost*count)+(count>1?" to buy "+count+" lives.":" to buy a life."));
      return true;
     }
     
@@ -471,24 +471,36 @@ public class playerLives extends JavaPlugin
    {
     try
     {
-     com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
-     if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
+     com.iCo6.iConomy iConomy6Plugin = (com.iCo6.iConomy)pluginMan.getPlugin("iConomy");
+     if (iConomy6Plugin!=null && iConomy6Plugin.isEnabled())
      {
-      Log.m("Successfully linked with iConomy 5");
-      econ = new iConomy5();
+      Log.m("Successfully linked with iConomy 6");
+      econ = new iConomy6();
      }
     }
-    catch (NoClassDefFoundError ex)
+    catch (NoClassDefFoundError ex1)
     {
-     Log.d("Failed to link with iConomy. Trying iConomy 4...");
-     com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
-     
-     if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
+     try
      {
-      Log.m("Successfully linked with iConomy 4");
-      econ = new iConomy4();
+      com.iConomy.iConomy iConomy5Plugin = (com.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+      if (iConomy5Plugin!=null && iConomy5Plugin.isEnabled())
+      {
+       Log.m("Successfully linked with iConomy 5");
+       econ = new iConomy5();
+      }
      }
-     else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
+     catch (NoClassDefFoundError ex2)
+     {
+      Log.d("Failed to link with iConomy. Trying iConomy 4...");
+      com.nijiko.coelho.iConomy.iConomy iConomy4Plugin = (com.nijiko.coelho.iConomy.iConomy)pluginMan.getPlugin("iConomy");
+      
+      if (iConomy4Plugin!=null && iConomy4Plugin.isEnabled())
+      {
+       Log.m("Successfully linked with iConomy 4");
+       econ = new iConomy4();
+      }
+      else {Log.d("Failed to link with iConomy 4 and iConomy 5!");}
+     }
     }
    }
   }
