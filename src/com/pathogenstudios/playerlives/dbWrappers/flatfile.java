@@ -93,7 +93,7 @@ public class flatfile extends dbWrapper
  
  public void close()
  {
-  autoSaveTimer.cancel();
+  if (autoSaveTimer != null) {autoSaveTimer.cancel();}
   super.close();
  }
  
