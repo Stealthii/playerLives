@@ -14,14 +14,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>3.8.1</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
@@ -50,4 +42,46 @@
 			</plugin>
 		</plugins>
 	</build>
+	<dependencies>
+		<dependency>
+			<groupId>cosine.boseconomy</groupId>
+			<artifactId>BOSEconomy</artifactId>
+			<version>0.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bukkit</groupId>
+			<artifactId>bukkit</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nijiko.coelho.iConomy</groupId>
+			<artifactId>iConomy4</artifactId>
+			<version>4.65</version>
+		</dependency>
+		<dependency>
+			<groupId>com.iConomy</groupId>
+			<artifactId>iConomy5</artifactId>
+			<version>5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.iCo6</groupId>
+			<artifactId>iConomy6</artifactId>
+			<version>6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.mysql.jdbc</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.9</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nijikokun.bukkit.Permissions</groupId>
+			<artifactId>Permissions</artifactId>
+			<version>2.5.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.getspout.spoutapi</groupId>
+			<artifactId>SpoutAPI</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
 </project>
