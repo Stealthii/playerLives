@@ -13,15 +13,13 @@ import java.sql.Connection;
 public class MySQL extends DbWrapper {
     private Connection con = null;
     private Statement db = null;
-
+    
     public MySQL(PlayerLives parent) {
 	super(parent);
 	open(true);
     }
-
-    public void open() {
-	open(false);
-    }
+    
+    public void open() {open(false);}
 
     public void open(boolean firstTime) {
 	Log.d(firstTime ? "Starting MySQL Database Engine..." : "Reconnecting to lost MySQL Database server...");
