@@ -17,23 +17,22 @@ public class Flatfile extends DbWrapper {
 	private HashMap<String, Integer> livesList;
 	private Timer autoSaveTimer = null;
 	private boolean isDirty = true;
-
+	
 	public Flatfile(PlayerLives parent) {
 		super(parent);
 		load();
-
-		Log.d(Integer.toString(parent.conf.flatFileAutosaveInterval));
+		
 		if (parent.conf.flatFileAutosaveInterval > 0) {
 			Log.d("Setting up flatfile autosave...");
 			autoSaveTimer = new Timer();
 			scheduleAutoSave();
 		}
 	}
-
+	
 	public boolean isActive() {
 		return livesDb != null;
 	}
-
+	
 	public void load() {
 		livesDb = new PropertyHandler(parent.getDataFolder() + File.separator + "livesDb.properties");//Created after the dir is made if it does not exist yet.
 
