@@ -1,8 +1,8 @@
 package com.pathogenstudios.playerlives.econWrappers;
 
-import com.pathogenstudios.playerlives.econWrapper;
+import com.pathogenstudios.playerlives.EconWrapper;
 
-public class BOSEconomy extends econWrapper
+public class BOSEconomy extends EconWrapper
 {
  cosine.boseconomy.BOSEconomy bose;
  public BOSEconomy(cosine.boseconomy.BOSEconomy bose)

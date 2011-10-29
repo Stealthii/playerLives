@@ -1,9 +1,9 @@
 package com.pathogenstudios.playerlives.econWrappers;
 
-import com.pathogenstudios.playerlives.econWrapper;
+import com.pathogenstudios.playerlives.EconWrapper;
 import com.iConomy.iConomy;
 
-public class iConomy5 extends econWrapper
+public class iConomy5 extends EconWrapper
 {
  
  public iConomy5() {super();}

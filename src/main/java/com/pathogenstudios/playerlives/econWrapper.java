@@ -2,7 +2,7 @@ package com.pathogenstudios.playerlives;
 
 import org.bukkit.entity.Player;
 
-public class econWrapper
+public class EconWrapper
 {
  public boolean isEnabled() {return false;}
  

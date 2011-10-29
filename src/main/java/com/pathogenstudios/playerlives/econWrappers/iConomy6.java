@@ -1,10 +1,10 @@
 package com.pathogenstudios.playerlives.econWrappers;
 
-import com.pathogenstudios.playerlives.econWrapper;
+import com.pathogenstudios.playerlives.EconWrapper;
 import com.iCo6.iConomy;
 import com.iCo6.system.Accounts;
 
-public class iConomy6 extends econWrapper
+public class iConomy6 extends EconWrapper
 {
  
  public iConomy6() {super();}

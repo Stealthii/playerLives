@@ -5,11 +5,11 @@ import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-public class plPlayerListener extends PlayerListener
+public class PlayerLivesPlayerListener extends PlayerListener
 {
- playerLives parent;
+ PlayerLives parent;
  
- public plPlayerListener(playerLives parent)
+ public PlayerLivesPlayerListener(PlayerLives parent)
  {
   this.parent = parent;
  }
