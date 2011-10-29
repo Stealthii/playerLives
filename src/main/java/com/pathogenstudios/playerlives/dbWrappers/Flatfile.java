@@ -120,6 +120,6 @@ public class Flatfile extends DbWrapper
   if (lives<0) {lives = 0;}
   livesList.put(player,lives);
   isDirty = true;
-  return true;
- }
+	return true;
+    }
 }

@@ -77,6 +77,6 @@ public class ConfigMan
   conf.setProperty("dbDatabase",dbDatabase);
   conf.setProperty("dbTable",dbTable);
   
-  conf.save();
- }
+	conf.save();
+    }
 }
