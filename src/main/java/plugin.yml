@@ -1,6 +1,6 @@
 name: playerLives
-main: com.pathogenstudios.playerlives.playerLives
-version: 1.5.2
+main: com.pathogenstudios.playerlives.PlayerLives
+version: 1.7
 author: Pathogen_David
 #depend: [Spout]
 
