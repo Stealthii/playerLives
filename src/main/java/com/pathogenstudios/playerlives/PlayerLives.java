@@ -134,40 +134,38 @@ public class PlayerLives extends JavaPlugin {
 	}
 	
 	public void onRespawn(PlayerRespawnEvent e) {
-		//We can not give them back their stuff yet, just mark the entry as
-		//respawned and handle it in onMove...
-		//We have to check the respawn because the entity can keep falling
-		//after death.
+		//We can not give them back their stuff yet, just mark the entry as respawned and handle it in onMove...
+		//We have to check the respawn because the entity can keep falling after death.
 		Player player = e.getPlayer();
 		
 		if (!checkPermission(player, "canuse")) {
 			return;
 		}
 		
+		String language = lang.getDefaultLanguage();
+		
 		if (invStore.containsKey(player)) {
 			invStore.get(player).setIsRespawned(true);
 			int lives = db.get(player.getName());
-			if (conf.infiniteLives) {}//Don't display anything.
-			//pathogenPlayerLives is now a static
-			//game mechanic.
+			
+			if (conf.infiniteLives) {
+				return;
+			}
 			else if (lives == 1) {
-				//player.sendMessage("Welcome back! You only have one more life! Be careful!");
-				sendPlayerNotification(player, "Welcome back!", "You have one more life!", Material.DIAMOND_CHESTPLATE, "Welcome back! You only have one more life! Be careful!");
+				sendPlayerNotification(player, lang.get(language, "spoutWelcomeCaption"), lang.get(language, "spoutWelcomeOneLife"), Material.DIAMOND_CHESTPLATE,
+					lang.get(language, "welcomeOneLife"));
 			}
 			else if (lives == 0) {
-				//player.sendMessage("Welcome back! You have no lives left! Be careful!");
-				sendPlayerNotification(player, "Welcome back!", "That was your last life!", Material.OBSIDIAN, "Welcome back! You have no lives left! Be careful!");
+				sendPlayerNotification(player, lang.get(language, "spoutWelcomeCaption"), lang.get(language, "spoutWelcomeLastLife"), Material.OBSIDIAN,
+					lang.get(language, "welcomeLastLife"));
 			}
 			else {
-				//player.sendMessage("Welcome back! You have "+lives+" lives left.");
-				sendPlayerNotification(player, "Welcome back!", "You have " + lives + " lives.", Material.DIAMOND_CHESTPLATE, "Welcome back! You have " + lives + " lives left.");
+				sendPlayerNotification(player, lang.get(language, "spoutWelcomeCaption"), lang.get(language, "spoutWelcomeBackGeneral","LIVES",Integer.toString(lives)), Material.DIAMOND_CHESTPLATE,
+					lang.get(language, "welcomeBackGeneral","LIVES",Integer.toString(lives)));
 			}
 		}
 		else {
-			/*if (!conf.infiniteLives) {player.sendMessage("Welcome back! It looks like you were out of lives.");}//Ideally this does not happen, but lets at least try to avoid confusing the player.
-			player.sendMessage("Your stuff did not come back with you.");
-			player.sendMessage("However, it might still be where you died!");*/
-			sendPlayerNotification(player, "You are out of lives.", "You lost your stuff.", Material.OBSIDIAN, "You ran out of lives, so you lost all your stuff.");
+			sendPlayerNotification(player, lang.get(language, "spoutWelcomeNoLivesCaption"), lang.get(language, "spoutWelcomeNoLives"), Material.OBSIDIAN, lang.get(language, "welcomeNoLives"));
 		}
 		
 		//Death economy punishment:
@@ -179,7 +177,7 @@ public class PlayerLives extends JavaPlugin {
 					toTake = oldBal;
 				}//In case the economy allows debt, we avoid creating it.
 				econ.subBalance(player, toTake);
-				player.sendMessage("You also lost " + econ.format(toTake) + " leaving you with " + econ.format(econ.getBalance(player)) + ".");
+				player.sendMessage(lang.get(language, "deathPunishMessage","MONEYLOST",econ.format(toTake),"PLAYERBALANCE",econ.format(econ.getBalance(player))));
 			}
 		}
 	}
@@ -254,43 +252,49 @@ public class PlayerLives extends JavaPlugin {
 			playerName = player.getName();
 		}
 		
+		String language = lang.getDefaultLanguage();
+		
 		if (commandName.compareToIgnoreCase("lives") == 0)//Check the current number of lives for a person... /lives [playername]
 		{
-			String messagePrefix = "You have";
+			boolean useThirdPerson = false;
 			String targetName = playerName;
-			if (args.length > 0) {targetName = args[0];}
-			else if (player == null) {return false;}//Console does not have lives!
+			if (args.length > 0) {
+				targetName = args[0];
+			}
+			else if (player == null) {//Console does not have lives!
+				return false;
+			}
 			
 			targetName = searchPlayer(targetName);
 			if (targetName != playerName) {
-				messagePrefix = targetName + " has";
+				useThirdPerson = true;
 				if (!checkPermission(player, "checkothers")) {
-					player.sendMessage(accessDenied);
+					player.sendMessage(lang.get(language, "accessDenied"));
 					return true;
 				}
 			}
 			else if (!checkPermission(player, "checkself")) {
-				player.sendMessage(accessDenied);
+				player.sendMessage(lang.get(language, "accessDenied"));
 				return true;
 			}
 
 			if (db.exists(targetName)) {
 				if (conf.infiniteLives) {
-					sender.sendMessage(messagePrefix + " infinite lives.");
+					sender.sendMessage(lang.get(language, useThirdPerson?"commandLivesPlayerHasInf":"commandLivesYouHaveInf", "PLAYER", targetName));
 				}
 				else {
-					sender.sendMessage(messagePrefix + " " + db.get(targetName) + " lives.");
+					sender.sendMessage(lang.get(language, useThirdPerson?"commandLivesPlayerHas":"commandLivesYouHave", "PLAYER", targetName, "LIVES", Integer.toString(db.get(targetName))));
 				}
 			}
 			else {
-				sender.sendMessage("No player named " + targetName + ".");
+				sender.sendMessage(lang.get(language, "unknownTarget", "PLAYER", targetName));
 			}
 			return true;
 		}
 		//Give lives to someone /givelives [playername] [lives]
 		else if ((commandName.compareToIgnoreCase("givelives") == 0 || commandName.compareToIgnoreCase("takelives") == 0 || commandName.compareToIgnoreCase("setlives") == 0)) {
 			if (!checkPermission(player, "change")) {
-				player.sendMessage(accessDenied);
+				player.sendMessage(lang.get(language, "accessDenied"));
 				return true;
 			}
 			String targetName = playerName;
@@ -298,7 +302,8 @@ public class PlayerLives extends JavaPlugin {
 			if (commandName.compareToIgnoreCase("setlives") == 0) {
 				count = conf.defaultLives;
 			}
-			String messagePrefix = "You now have";
+			
+			boolean useThirdPerson = false;
 
 			for (int i = 0; i < args.length; i++) {
 				if (i > 1) {break;}//We only have two possible arguments...
@@ -307,11 +312,13 @@ public class PlayerLives extends JavaPlugin {
 			}
 
 			targetName = searchPlayer(targetName);
+			
 			if (commandName.compareToIgnoreCase("takelives") == 0) {
 				count = -count;
 			}
+			
 			if (targetName != playerName) {
-				messagePrefix = targetName + " now has";
+				useThirdPerson = true;
 			}
 
 			if (db.exists(targetName)) {
@@ -321,66 +328,64 @@ public class PlayerLives extends JavaPlugin {
 				else {
 					db.give(targetName, count);
 				}
-
-				sender.sendMessage(messagePrefix + " " + db.get(targetName) + " lives.");
+				
+				sender.sendMessage(lang.get(language, useThirdPerson?"commandGivePlayerHas":"commandGiveYouHave", "PLAYER", targetName, "LIVES", Integer.toString(db.get(targetName))));
 			}
 			else {
-				sender.sendMessage("No player named " + targetName + ".");
+				sender.sendMessage(lang.get(language, "unknownTarget", "PLAYER", targetName));
 			}
 			return true;
 		}
 		else if (commandName.compareToIgnoreCase("buylives") == 0) {
 			if (!checkPermission(player, "buy")) {
-				player.sendMessage(accessDenied);
+				player.sendMessage(lang.get(language, "accessDenied"));
 				return true;
 			}
 			String targetName = playerName;
 			Integer count = 1;
 
 			if (!econ.isEnabled()) {
-				sender.sendMessage("Server needs an economy to enable buying lives!");
+				sender.sendMessage(lang.get(language, "commandBuyNoEconomy"));
 				return true;//<< Technically it was handled...
 			}
 
 			if (args.length >= 1) {
 				try {
-					count = Integer.parseInt(args[0]);
-				}//Is it a number? If so, it must be the count...
+					count = Integer.parseInt(args[0]);//Is it a number? If so, it must be the count...
+				}
 				catch (Exception e) {
-					sender.sendMessage("Expected a number for count.");
+					sender.sendMessage(lang.get(language, "commandBuyNotNumber"));
 					return false;//<< To avoid unexpected transactions, bail out. Use false so Bukkit will remind them of command usage.
 				}
 
 				if (count < 1) {
-					sender.sendMessage("Invalid count.");
+					sender.sendMessage(lang.get(language,"commandBuyBadInput"));
 					return false;
 				}
 			}
 
 			if (db.exists(targetName)) {
-				//Holdings account =
-				//iConomy.getAccount(targetName).getHoldings();
 				if (econ.getBalance(targetName) < conf.lifeCost * count) {
-					sender.sendMessage("You do not have enough " + econ.getCurrency(true));
-					sender.sendMessage("You need " + econ.format(conf.lifeCost * count) + (count > 1 ? " to buy " + count + " lives." : " to buy a life."));
+					sender.sendMessage(lang.get(language,"commandBuyNotEnoughMoney","CURRENCY",econ.getCurrency(true)));
+					sender.sendMessage(lang.get(language,count > 1?"commandBuyYouNeedMulti":"commandBuyYouNeed","MONEY",econ.format(conf.lifeCost * count),"LIVES",Integer.toString(count)));
 					return true;
 				}
 
 				econ.subBalance(targetName, conf.lifeCost * count);
 				db.give(targetName, count);
 				int numLives = db.get(targetName);
-				sender.sendMessage("You now have " + numLives + (numLives == 1 ? " life" : " lives") + " and " + econ.format(econ.getBalance(targetName)) + ".");
+				sender.sendMessage(lang.get(language,numLives==1?"commandBuyYouNowHave":"commandBuyYouNowHaveMulti","LIVES",Integer.toString(numLives),"MONEY",econ.format(econ.getBalance(targetName))));
 			}
 			else {
-				sender.sendMessage("No player named " + targetName + ".");
-				Log.e("Player '" + targetName + "' does not exist!");
+				sender.sendMessage(lang.get(language, "unknownTarget", "PLAYER", targetName));
+				Log.e("Player '" + targetName + "' does not exist in the databse!");
 			}
 			return true;
 		}
 		else if (commandName.compareToIgnoreCase("playerlives") == 0 || commandName.compareToIgnoreCase("ppl") == 0) {
 			String subCommand = "";
 			if (args.length < 1) {
-				sender.sendMessage("You must specifiy a subcommand.");
+				sender.sendMessage(lang.get(language, "commandPplNone"));
 				subCommand = "help";
 			}
 			else {
@@ -388,26 +393,26 @@ public class PlayerLives extends JavaPlugin {
 			}
 
 			if (subCommand.equalsIgnoreCase("enable")) {
-				sender.sendMessage("Unimplemented");
+				sender.sendMessage(lang.get(language, "commandPplEnable"));
 				return true;
 			}
 			else if (subCommand.equalsIgnoreCase("disable")) {
-				sender.sendMessage("Unimplemented");
+				sender.sendMessage(lang.get(language, "commandPplDisable"));
 				return true;
 			}
 			else if (subCommand.equalsIgnoreCase("reload")) {
-				sender.sendMessage("Reloading the plugin...");
+				sender.sendMessage(lang.get(language, "commandPplReloadMessageStart"));
 				onDisable();
 				onEnable();
-				sender.sendMessage("Pathogen Player Lives was successfully reloaded.");
+				sender.sendMessage(lang.get(language, "commandPplReloadMessageDone"));
 				return true;
 			}
 			else if (subCommand.equalsIgnoreCase("help")) {
-				sender.sendMessage("Mmmmmm....so you're a bitch. that likes...BANANAS?!");
+				sender.sendMessage(lang.get(language, "helpFirstLine"));
 				return true;
 			}
 			else {
-				sender.sendMessage("Invalid subcommand '" + subCommand + "'");
+				sender.sendMessage(lang.get(language, "commandPplInvalid","SUBCOMMAND",subCommand));
 				return false;
 			}
 		}
@@ -426,8 +431,6 @@ public class PlayerLives extends JavaPlugin {
 			return player.hasPermission("playerlives." + node);
 		}
 	}
-
-	final static String accessDenied = "You do not have access to that command.";
 
 	public String searchPlayer(String targetName) {
 		if (!db.exists(targetName))//Try to resolve the name to someone on the
