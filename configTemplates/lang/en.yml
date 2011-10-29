@@ -1,0 +1,62 @@
+#Pathogen Player Lives Sample English Translation File
+#http://www.pathogenstudios.com/playerLives
+
+#Welcome messages
+welcomeOneLife: Welcome back! You only have one more life! Be careful!
+welcomeLastLife: Welcome back! You have no lives left! Be careful!
+welcomeBackGeneral: Welcome back! You have $LIVES lives left.
+welcomeNoLives: You ran out of lives, so you lost all your stuff.
+
+deathPunishMessage: You also lost $MONEYLOST leaving you with $PLAYERBALANCE.
+
+#Spout welcome messages
+#Everything uses spoutWelcomeCaption except for the no lives condition.
+spoutWelcomeCaption: Welcome back!
+spoutWelcomeOneLife: You have one more life!
+spoutWelcomeLastLife: That was your last life!
+spoutWelcomeBackGeneral: You have $LIVES lives.
+spoutWelcomeNoLivesCaption: You are out of lives.
+spoutWelcomeNoLives: You lost your stuff.
+
+#Hmm, there is no spoutDeathPunishMessage...todo?
+
+#Command echos
+accessDenied: You do not have access to that command.
+unknownTarget: No player named $PLAYER.
+
+#/lives
+commandLivesYouHave: You have $LIVES lives.
+commandLivesYouHaveInf: You have infinite lives.
+commandLivesPlayerHas: $PLAYER has $LIVES lives.
+commandLivesPlayerHasInf: $PLAYER has infinite lives.
+
+#/givelives, /takelives, /setlives
+commandGiveYouHave: You now have $LIVES lives.
+commandGivePlayerHas: $PLAYER now has $LIVES lives.
+
+#/buylives
+commandBuyNotNumber: Expected a number for purchase count.
+commandBuyBadInput: Invalid purchase count.
+commandBuyNoEconomy: Server needs an economy to enable buying lives!
+
+commandBuyNotEnoughMoney: You do not have enough $CURRENCY.
+commandBuyYouNeed: You need $MONEY to buy a life.
+commandBuyYouNeedMulti: You need $MONEY to buy $LIVES lives.
+
+commandBuyYouNowHave: You now have $LIVES life and $MONEY.
+commandBuyYouNowHaveMulti: You now have $LIVES lives and $MONEY.
+
+#/ppl
+commandPplNone: You must specifiy a subcommand.
+commandPplInvalid: Invalid subcommand '$SUBCOMMAND'
+
+#/ppl enable, disable, reload
+commandPplEnable: Unimplemented
+commandPplDisable: Unimplemented
+
+commandPplReloadMessageStart: Reloading the plugin...
+commandPplReloadMessageDone: Pathogen Player Lives was successfully reloaded.
+
+#/ppl help command
+helpFirstLine: Mmmmmm....so you're a bitch. that likes...BANANAS?!
+#TODO: Separate help messages...
