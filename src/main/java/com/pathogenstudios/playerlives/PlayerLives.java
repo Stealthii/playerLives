@@ -54,32 +54,33 @@ public class PlayerLives extends JavaPlugin {
 	private HashMap<Player, InventoryStore> invStore = new HashMap<Player, InventoryStore>();
 	//private HashMap<Player,GenericLabel> hudLabels = null;
 
-	//Configuration:
+	//Configuration and such:
 	public ConfigMan conf;
+	private LangMan lang;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Enable / Disable:
 	public void onEnable() {
 		Log.m("Loading Pathogen playerLives...");
-
+		Log.verbose = true;//Use Verbose until config is loaded so any pre-config verbose messages are still displayed for debugging purposes.
+		
 		pluginMan = getServer().getPluginManager();
 		econ = new EconWrapper();//Dummy wrapper until a compatible econ plugin is detected.
-
+		
 		//Make config folder if necessary...
-		getDataFolder().mkdir();//boolean newInstall =
-
+		getDataFolder().mkdir();
+		
+		//Set up language stuff (Do before config - config will cause all allowed languages to be loaded.)
+		lang = new LangMan(this,"en");
+		
 		//Config Loading and such
 		conf = new ConfigMan(this);
 		Log.verbose = conf.verbose;
-
+		
 		//Load Lives Db
-		if (conf.dbDriver.compareTo("mysql") == 0) {
-			db = new MySQL(this);
-		}
-		if (db == null || !db.isActive()) {
-			db = new Flatfile(this);
-		}//Default / fall back on flatfile.
-
+		if (conf.dbDriver.compareTo("mysql") == 0) {db = new MySQL(this);}
+		if (db == null || !db.isActive()) {db = new Flatfile(this);}//Default / fall back on flatfile.
+		
 		//Register Events
 		pluginMan.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Event.Priority.Normal, this);
 		pluginMan.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Normal, this);
@@ -87,14 +88,14 @@ public class PlayerLives extends JavaPlugin {
 		pluginMan.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Event.Priority.Normal, this);
 		pluginMan.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Event.Priority.Normal, this);
 		pluginMan.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Event.Priority.Monitor, this);
-
+		
 		//Simulate onJoin events for all players currently online
 		Player[] onlinePlayers = getServer().getOnlinePlayers();
 
 		for (Player onlinePlayer : onlinePlayers) {
 			playerListener.onPlayerJoin(new PlayerJoinEvent(onlinePlayer, ""));
 		}
-
+		
 		Log.m("Done loading Pathogen playerLives.");
 	}
 
@@ -103,17 +104,15 @@ public class PlayerLives extends JavaPlugin {
 		db.close();
 		Log.v("I'm not even angry...");
 	}
-
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Event Callbacks:
 	public void onDeath(EntityDeathEvent e) {
 		Player player = (Player) e.getEntity();
 		String playerName = player.getName();
-
-		if (!checkPermission(player, "canuse")) {
-			return;
-		}
-
+		
+		if (!checkPermission(player, "canuse")) {return;}
+		
 		if (db.get(playerName) >= 1) {
 			//Save old inventory:
 			invStore.put(player, new InventoryStore(player.getInventory()));
@@ -124,7 +123,7 @@ public class PlayerLives extends JavaPlugin {
 				e.getDrops().remove(i);
 				i--;
 			}
-
+			
 			if (!conf.infiniteLives) {
 				db.take(playerName, 1);
 			}//Do the subtraction of a life.
@@ -133,18 +132,18 @@ public class PlayerLives extends JavaPlugin {
 			Log.d("Player " + playerName + " is out of lives, drops will not be surpressed.");
 		}
 	}
-
+	
 	public void onRespawn(PlayerRespawnEvent e) {
 		//We can not give them back their stuff yet, just mark the entry as
 		//respawned and handle it in onMove...
 		//We have to check the respawn because the entity can keep falling
 		//after death.
 		Player player = e.getPlayer();
-
+		
 		if (!checkPermission(player, "canuse")) {
 			return;
 		}
-
+		
 		if (invStore.containsKey(player)) {
 			invStore.get(player).setIsRespawned(true);
 			int lives = db.get(player.getName());
@@ -170,7 +169,7 @@ public class PlayerLives extends JavaPlugin {
 			player.sendMessage("However, it might still be where you died!");*/
 			sendPlayerNotification(player, "You are out of lives.", "You lost your stuff.", Material.OBSIDIAN, "You ran out of lives, so you lost all your stuff.");
 		}
-
+		
 		//Death economy punishment:
 		if (econ.isEnabled() && conf.deathPunishmentCost > 0) {
 			double oldBal = econ.getBalance(player);
@@ -184,21 +183,18 @@ public class PlayerLives extends JavaPlugin {
 			}
 		}
 	}
-
+	
 	public void onMove(PlayerMoveEvent e) {
 		Player player = e.getPlayer();
 
-		//Give them their stuff back (if they just respawned and have logged
-		//stuff)
+		//Give them their stuff back (if they just respawned and have logged stuff)
 		if (invStore.containsKey(player) && invStore.get(player).isRespawned()) {
-			if (!checkPermission(player, "canuse")) {
-				return;
-			}
+			if (!checkPermission(player, "canuse")) {return;}
 			invStore.get(player).paste(player.getInventory());
 			invStore.remove(player);
 		}
 	}
-
+	
 	public void onJoin(PlayerJoinEvent e) {
 		Log.d("Player joined! '" + e.getPlayer().getName() + "'");
 		Player player = e.getPlayer();
@@ -209,7 +205,7 @@ public class PlayerLives extends JavaPlugin {
 			Log.d("Unrecognized player! Giving them " + conf.defaultLives + " lives!");
 			db.addPlayer(player, conf.defaultLives);
 		}
-
+		
 		if (spout != null) {
 			//TODO: Make this not NEED spout but allow spout.
 			/*if (hudLabels == null)
@@ -229,7 +225,7 @@ public class PlayerLives extends JavaPlugin {
 			onNumLivesChange(player.getName());
 		}
 	}
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Internal callbacks
 	public void onNumLivesChange(String playerName) {
@@ -246,7 +242,7 @@ public class PlayerLives extends JavaPlugin {
 		((GenericLabel)hudLabels.get(player)).setText("Lives: " + db.get(player)).setDirty(true);
 		SpoutManager.getPlayer(player).getMainScreen().setDirty(true);*/
 	}
-
+	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Handle commands
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -257,21 +253,14 @@ public class PlayerLives extends JavaPlugin {
 			player = (Player) sender;
 			playerName = player.getName();
 		}
-
-		if (commandName.compareToIgnoreCase("lives") == 0)//Check the current
-		//number of lives for
-		//a person... /lives
-		//[playername]
+		
+		if (commandName.compareToIgnoreCase("lives") == 0)//Check the current number of lives for a person... /lives [playername]
 		{
 			String messagePrefix = "You have";
 			String targetName = playerName;
-			if (args.length > 0) {
-				targetName = args[0];
-			}
-			else if (player == null) {
-				return false;
-			}//Console does not have lives!
-
+			if (args.length > 0) {targetName = args[0];}
+			else if (player == null) {return false;}//Console does not have lives!
+			
 			targetName = searchPlayer(targetName);
 			if (targetName != playerName) {
 				messagePrefix = targetName + " has";
@@ -312,15 +301,9 @@ public class PlayerLives extends JavaPlugin {
 			String messagePrefix = "You now have";
 
 			for (int i = 0; i < args.length; i++) {
-				if (i > 1) {
-					break;
-				}//We only have two possible arguments...
-				try {
-					count = Integer.parseInt(args[i]);
-				}//Is it a number? If so, it must be the count...
-				catch (Exception e) {
-					targetName = args[i];
-				}//If not, it is probably the player name
+				if (i > 1) {break;}//We only have two possible arguments...
+				try {count = Integer.parseInt(args[i]);}//Is it a number? If so, it must be the count...
+				catch (Exception e) {targetName = args[i];}//If not, it is probably the player name
 			}
 
 			targetName = searchPlayer(targetName);

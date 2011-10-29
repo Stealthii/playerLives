@@ -12,9 +12,18 @@ public class PathogenUtil {
 		try {
 			File f = new File(destination);
 			
-			if (f.exists()) {return;}
+			Log.d(""+f.length());
+			if (f.exists() && f.length() > 0) {return;}
 			
-			InputStream inputStream = Class.class.getResourceAsStream(resourceName);
+			new File(f.getParent()).mkdirs();//Make the directory if it doesn't exist.
+			f.createNewFile();
+			
+			InputStream inputStream = PathogenUtil.class.getClassLoader().getResourceAsStream(resourceName);
+			
+			if (inputStream == null) {
+				Log.e("Resource '" + resourceName + "' was not found!");
+			}
+			
 			OutputStream outputStream = new FileOutputStream(f);
 			
 			int read = 0;
