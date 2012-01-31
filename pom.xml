@@ -1,6 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <groupId>com.pathogenstudios</groupId>
   <artifactId>playerLives</artifactId>
   <version>0.0.1-SNAPSHOT</version>
@@ -10,12 +9,25 @@
   <url>http://www.pathogenstudios.com/</url>
 
   <scm>
-    <connection>scm:git:</connection>
+    <connection>scm:git:git://github.com/Stealthii/playerLives.git</connection>
+    <url>https://github.com/Stealthii/playerLives</url>
+    <developerConnection>scm:git:git@github.com:Stealthii/playerLives.git</developerConnection>
   </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>bukkit-repo</id>
+      <url>http://repo.bukkit.org/content/groups/public</url>
+    </repository>
+    <repository>
+      <id>spout-repo</id>
+      <url>http://repo.getspout.org</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
