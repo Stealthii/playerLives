@@ -1,4 +1,0 @@
-glob:target/*
-glob:.settings/*
-glob:.classpath
-glob:media/*
