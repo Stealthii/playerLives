@@ -1,12 +1,18 @@
+<!--
+  Maven build file for playerLives
+  Copyright (c) 2011 Pathogen_David <http://www.pathogenstudios.com>
+  playerLives is available under the zlib/libpng License
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pathogenstudios</groupId>
   <artifactId>playerLives</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
-
+  <version>1.7.1-SNAPSHOT</version>
   <name>playerLives</name>
-  <url>http://www.pathogenstudios.com/</url>
+  <description>PlayerLives is a lives plugin for CraftBukkit.</description>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
 
   <scm>
     <connection>scm:git:git://github.com/Stealthii/playerLives.git</connection>
@@ -14,11 +20,11 @@
     <developerConnection>scm:git:git@github.com:Stealthii/playerLives.git</developerConnection>
   </scm>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
   <repositories>
+    <repository>
+      <id>sk89q-mvn2</id>
+      <url>http://mvn2.sk89q.com/repo</url>
+    </repository>
     <repository>
       <id>bukkit-repo</id>
       <url>http://repo.bukkit.org/content/groups/public</url>
@@ -30,49 +36,82 @@
   </repositories>
 
   <dependencies>
+    <!-- Used for Permissions support (this version has both the legacy API 
+      and the new Permissions API to compile against -->
+    <dependency>
+      <groupId>com.sk89q</groupId>
+      <artifactId>dummypermscompat</artifactId>
+      <version>1.6</version>
+    </dependency>
+
+    <!-- Bukkit -->
+    <dependency>
+      <groupId>org.bukkit</groupId>
+      <artifactId>bukkit</artifactId>
+      <version>1.1-R1-SNAPSHOT</version>
+    </dependency>
+
+    <!-- BOSEconomy -->
     <dependency>
       <groupId>cosine.boseconomy</groupId>
       <artifactId>BOSEconomy</artifactId>
       <version>0.7.0</version>
     </dependency>
-    <dependency>
-      <groupId>org.bukkit</groupId>
-      <artifactId>bukkit</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
+
+    <!-- iConomy 4 -->
     <dependency>
       <groupId>com.nijiko.coelho.iConomy</groupId>
       <artifactId>iConomy4</artifactId>
       <version>4.65</version>
     </dependency>
+
+    <!-- iConomy 5 -->
     <dependency>
       <groupId>com.iConomy</groupId>
       <artifactId>iConomy5</artifactId>
       <version>5.0</version>
     </dependency>
+
+    <!-- iConomy 6 -->
     <dependency>
       <groupId>com.iCo6</groupId>
       <artifactId>iConomy6</artifactId>
       <version>6.0</version>
     </dependency>
+
+    <!-- MySQL Connector -->
     <dependency>
       <groupId>com.mysql.jdbc</groupId>
       <artifactId>mysql-connector-java</artifactId>
       <version>5.1.9</version>
     </dependency>
+
+    <!-- Spout -->
     <dependency>
-      <groupId>com.nijikokun.bukkit.Permissions</groupId>
-      <artifactId>Permissions</artifactId>
-      <version>2.5.5</version>
-    </dependency>
-    <dependency>
-      <groupId>org.getspout.spoutapi</groupId>
-      <artifactId>SpoutAPI</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <groupId>org.spout</groupId>
+      <artifactId>spoutapi</artifactId>
+      <version>dev-SNAPSHOT</version>
     </dependency>
   </dependencies>
+
   <build>
+    <sourceDirectory>${basedir}/src/main/java/</sourceDirectory>
+
+    <!-- Resources -->
+    <resources>
+      <resource>
+        <targetPath>.</targetPath>
+        <filtering>true</filtering>
+        <directory>${basedir}/src/main/resources/</directory>
+        <includes>
+          <include>plugin.yml</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <!-- Plugins -->
     <plugins>
+      <!-- Compile plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
