@@ -1,6 +1,7 @@
 1.7.1:
  - Project code refactor
  - Updated for Bukkit 1.1
+ - Fixed Spout issues
 
 1.7:
  - Added localization (English only for now)
