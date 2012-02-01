@@ -19,6 +19,7 @@ import com.pathogenstudios.playerlives.econWrappers.*;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -49,7 +50,6 @@ public class PlayerLives extends JavaPlugin {
     private HashMap<Player, InventoryStore> invStore = new HashMap<Player, InventoryStore>();
 
     // private HashMap<Player,GenericLabel> hudLabels = null;
-
     // Configuration and such:
     public ConfigMan    conf;
     private EconWrapper econ;
@@ -230,14 +230,21 @@ public class PlayerLives extends JavaPlugin {
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Handle commands
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Player player      = null;
-        String playerName  = "";
-        String commandName = command.getName().toLowerCase();
+        boolean isPlayer;
+        Player  player      = null;
+        String  playerName  = "";
+        String  commandName = command.getName().toLowerCase();
 
         if (sender instanceof Player) {
             player     = (Player) sender;
             playerName = player.getName();
+            isPlayer   = true;
+        } else if (sender instanceof ConsoleCommandSender) {
+            isPlayer = false;
+        } else {
+            return false;
         }
 
         String language = lang.getDefaultLanguage();
@@ -258,15 +265,11 @@ public class PlayerLives extends JavaPlugin {
             if (targetName != playerName) {
                 useThirdPerson = true;
 
-                if (!checkPermission(player, "checkothers")) {
-                    player.sendMessage(lang.get(language, "accessDenied"));
+                if (isPlayer && (!checkPermission(player, "checkothers") ||!checkPermission(player, "checkself"))) {
+                    sender.sendMessage(lang.get(language, "accessDenied"));
 
                     return true;
                 }
-            } else if (!checkPermission(player, "checkself")) {
-                player.sendMessage(lang.get(language, "accessDenied"));
-
-                return true;
             }
 
             if (db.exists(targetName)) {
@@ -291,8 +294,8 @@ public class PlayerLives extends JavaPlugin {
         else if (((commandName.compareToIgnoreCase("givelives") == 0)
                   || (commandName.compareToIgnoreCase("takelives") == 0)
                   || (commandName.compareToIgnoreCase("setlives") == 0))) {
-            if (!checkPermission(player, "change")) {
-                player.sendMessage(lang.get(language, "accessDenied"));
+            if (isPlayer &&!checkPermission(player, "change")) {
+                sender.sendMessage(lang.get(language, "accessDenied"));
 
                 return true;
             }
@@ -345,8 +348,12 @@ public class PlayerLives extends JavaPlugin {
 
             return true;
         } else if (commandName.compareToIgnoreCase("buylives") == 0) {
-            if (!checkPermission(player, "buy")) {
-                player.sendMessage(lang.get(language, "accessDenied"));
+            if (isPlayer &&!checkPermission(player, "buy")) {
+                sender.sendMessage(lang.get(language, "accessDenied"));
+
+                return true;
+            } else if (!isPlayer) {
+                sender.sendMessage("You can't buy lives, you're the console!");    // TODO: language translation
 
                 return true;
             }
@@ -357,7 +364,7 @@ public class PlayerLives extends JavaPlugin {
             if (!econ.isEnabled()) {
                 sender.sendMessage(lang.get(language, "commandBuyNoEconomy"));
 
-                return true;                              // << Technically it was handled...
+                return true;                                                       // << Technically it was handled...
             }
 
             if (args.length >= 1) {
