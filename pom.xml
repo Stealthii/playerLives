@@ -106,6 +106,15 @@
           <include>plugin.yml</include>
         </includes>
       </resource>
+      <!-- Language translations -->
+      <resource>
+        <targetPath>lang/</targetPath>
+        <filtering>true</filtering>
+        <directory>${basedir}/src/main/resources/lang/</directory>
+        <includes>
+          <include>en.yml</include>
+        </includes>
+      </resource>
     </resources>
 
     <!-- Plugins -->

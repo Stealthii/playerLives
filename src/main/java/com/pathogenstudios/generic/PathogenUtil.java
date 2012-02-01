@@ -23,7 +23,7 @@ public class PathogenUtil {
             new File(f.getParent()).mkdirs();    // Make the directory if it doesn't exist.
             f.createNewFile();
 
-            InputStream inputStream = PathogenUtil.class.getClassLoader().getResourceAsStream(resourceName);
+            InputStream inputStream = PathogenUtil.class.getClassLoader().getResourceAsStream("lang/" + resourceName);
 
             if (inputStream == null) {
                 Log.e("Resource '" + resourceName + "' was not found!");
