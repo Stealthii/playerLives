@@ -20,9 +20,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.PluginEnableEvent;
-import org.getspout.spoutapi.SpoutManager;
-//import org.getspout.spoutapi.gui.*;
-//import org.getspout.spoutapi.player.SpoutPlayer;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -48,7 +45,6 @@ public class PlayerLives extends JavaPlugin {
 	private PermissionHandler permissionsPlugin = null;
 	private EconWrapper econ;
 	private DbWrapper db = null;
-	private SpoutManager spout = null;
 
 	//Inernal:
 	private HashMap<Player, InventoryStore> invStore = new HashMap<Player, InventoryStore>();
@@ -203,42 +199,6 @@ public class PlayerLives extends JavaPlugin {
 			Log.d("Unrecognized player! Giving them " + conf.defaultLives + " lives!");
 			db.addPlayer(player, conf.defaultLives);
 		}
-		
-		if (spout != null) {
-			//TODO: Make this not NEED spout but allow spout.
-			/*if (hudLabels == null)
-			{
-			 hudLabels = new HashMap<Player,GenericLabel>();
-			}
-			
-			GenericLabel newLbl = new GenericLabel("");
-			newLbl.setHexColor(Integer.parseInt("FFFFFF", 16)).setX(10).setY(10);
-			newLbl.setText("");
-			newLbl.setDirty(true);
-			
-			//SpoutPlayer sp = SpoutManager.getPlayer(player);
-			//sp.getMainScreen().attachWidget(newLbl);
-			
-			hudLabels.put(player,newLbl);*/
-			onNumLivesChange(player.getName());
-		}
-	}
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//Internal callbacks
-	public void onNumLivesChange(String playerName) {
-		//Player player = getServer().getPlayer(playerName);
-
-		//TODO: Make this not NEED spout but allow spout.
-		/*if (spout == null || hudLabels.get(player)==null)
-		{
-		 Log.d("No player in hud label list or spout is off.");
-		 return;
-		}
-		Log.d("Updating player " + playerName + "'s Spout status label.");
-		
-		((GenericLabel)hudLabels.get(player)).setText("Lives: " + db.get(player)).setDirty(true);
-		SpoutManager.getPlayer(player).getMainScreen().setDirty(true);*/
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -449,12 +409,7 @@ public class PlayerLives extends JavaPlugin {
 			classicMessage = title + " " + message;
 		}
 
-		if (spout != null && SpoutManager.getPlayer(player).isSpoutCraftEnabled()) {
-			SpoutManager.getPlayer(player).sendNotification(title, message, icon);
-		}
-		else {
-			player.sendMessage(classicMessage);
-		}
+		player.sendMessage(classicMessage);
 	}
 
 	public void sendPlayerNotification(Player player, String title, String message, Material icon) {
@@ -514,14 +469,6 @@ public class PlayerLives extends JavaPlugin {
 			}
 			else {
 				permissionsPlugin = null;
-			}
-		}
-
-		//Spout!
-		if (spout == null && pluginMan.getPlugin("Spout") != null) {
-			spout = SpoutManager.getInstance();
-			if (spout != null) {
-				Log.m("Successfully linked with Spout");
 			}
 		}
 	}
