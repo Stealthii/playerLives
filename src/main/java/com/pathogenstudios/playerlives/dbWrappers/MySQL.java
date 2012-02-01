@@ -232,7 +232,7 @@ public class MySQL extends DbWrapper {
 			e.printStackTrace();
 			ret = false;
 		}
-		parent.onNumLivesChange(player);
+//		parent.onNumLivesChange(player);  //TODO: Implement
 		return ret;
 	}
 
@@ -251,7 +251,7 @@ public class MySQL extends DbWrapper {
 			e.printStackTrace();
 			ret = false;
 		}
-		parent.onNumLivesChange(player);
+//		parent.onNumLivesChange(player);  //TODO: Implement
 		return ret;
 	}
 }
