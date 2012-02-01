@@ -36,54 +36,53 @@
   </repositories>
 
   <dependencies>
-    <!-- Used for Permissions support (this version has both the legacy API 
-      and the new Permissions API to compile against -->
+    <!-- Permissions -->
     <dependency>
-      <groupId>com.sk89q</groupId>
-      <artifactId>dummypermscompat</artifactId>
-      <version>1.6</version>
+      <groupId>com.nijikokun.bukkit</groupId>
+      <artifactId>Permissions</artifactId>
+      <version>3.1.6</version>
     </dependency>
 
     <!-- Bukkit -->
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.1-R1-SNAPSHOT</version>
+      <version>1.1-R3</version>
     </dependency>
 
     <!-- BOSEconomy -->
     <dependency>
-      <groupId>cosine.boseconomy</groupId>
-      <artifactId>BOSEconomy</artifactId>
-      <version>0.7.0</version>
+      <groupId>cosine</groupId>
+      <artifactId>boseconomy</artifactId>
+      <version>0.7.3</version>
     </dependency>
 
     <!-- iConomy 4 -->
     <dependency>
-      <groupId>com.nijiko.coelho.iConomy</groupId>
-      <artifactId>iConomy4</artifactId>
+      <groupId>com.nijiko.coelho</groupId>
+      <artifactId>iConomy</artifactId>
       <version>4.65</version>
     </dependency>
 
     <!-- iConomy 5 -->
     <dependency>
-      <groupId>com.iConomy</groupId>
-      <artifactId>iConomy5</artifactId>
+      <groupId>com</groupId>
+      <artifactId>iConomy</artifactId>
       <version>5.0</version>
     </dependency>
 
     <!-- iConomy 6 -->
     <dependency>
-      <groupId>com.iCo6</groupId>
-      <artifactId>iConomy6</artifactId>
-      <version>6.0</version>
+      <groupId>com</groupId>
+      <artifactId>iCo6</artifactId>
+      <version>6.0.8b</version>
     </dependency>
 
     <!-- MySQL Connector -->
     <dependency>
-      <groupId>com.mysql.jdbc</groupId>
+      <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>5.1.9</version>
+      <version>5.1.18</version>
     </dependency>
 
     <!-- Spout -->
