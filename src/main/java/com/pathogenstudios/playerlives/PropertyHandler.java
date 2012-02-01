@@ -1,13 +1,15 @@
 package com.pathogenstudios.playerlives;
 
-//Blatant steal from the permissions plugin!
+//~--- JDK imports ------------------------------------------------------------
 
+//Blatant steal from the permissions plugin!
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,20 +44,20 @@ import java.util.logging.Logger;
  * @author Nijiko
  */
 public final class PropertyHandler {
-
     private static final Logger log = Logger.getLogger("Minecraft");
-    private Properties properties;
-    private String fileName;
+    private String              fileName;
+    private Properties          properties;
 
     public PropertyHandler(String fileName) {
-        this.fileName = fileName;
+        this.fileName   = fileName;
         this.properties = new Properties();
+
         File file = new File(fileName);
 
         if (file.exists()) {
             load();
         } else {
-            save();//This fails when the directory does not exist!
+            save();    // This fails when the directory does not exist!
         }
     }
 
@@ -76,43 +78,55 @@ public final class PropertyHandler {
     }
 
     public Map<String, String> returnMap() throws Exception {
-        Map<String, String> map = new HashMap<String, String>();
-        BufferedReader reader = new BufferedReader(new FileReader(this.fileName));
-        String line;
+        Map<String, String> map    = new HashMap<String, String>();
+        BufferedReader      reader = new BufferedReader(new FileReader(this.fileName));
+        String              line;
+
         while ((line = reader.readLine()) != null) {
             if (line.trim().length() == 0) {
                 continue;
             }
+
             if (line.charAt(0) == '#') {
                 continue;
             }
-            int delimPosition = line.indexOf('=');
-            String key = line.substring(0, delimPosition).trim();
-            String value = line.substring(delimPosition + 1).trim();
+
+            int    delimPosition = line.indexOf('=');
+            String key           = line.substring(0, delimPosition).trim();
+            String value         = line.substring(delimPosition + 1).trim();
+
             map.put(key, value);
         }
+
         reader.close();
+
         return map;
     }
-    
-    //Added by Pathogen_David
+
+    // Added by Pathogen_David
     public ArrayList<String> getKeys() throws Exception {
-        ArrayList<String> map = new ArrayList<String>();
-        BufferedReader reader = new BufferedReader(new FileReader(this.fileName));
-        String line;
+        ArrayList<String> map    = new ArrayList<String>();
+        BufferedReader    reader = new BufferedReader(new FileReader(this.fileName));
+        String            line;
+
         while ((line = reader.readLine()) != null) {
             if (line.trim().length() == 0) {
                 continue;
             }
+
             if (line.charAt(0) == '#') {
                 continue;
             }
-            int delimPosition = line.indexOf('=');
-            String key = line.substring(0, delimPosition).trim();
-            //String value = line.substring(delimPosition + 1).trim();
+
+            int    delimPosition = line.indexOf('=');
+            String key           = line.substring(0, delimPosition).trim();
+
+            // String value = line.substring(delimPosition + 1).trim();
             map.add(key);
         }
+
         reader.close();
+
         return map;
     }
 
@@ -137,7 +151,9 @@ public final class PropertyHandler {
         if (this.properties.containsKey(key)) {
             return this.properties.getProperty(key);
         }
+
         setString(key, value);
+
         return value;
     }
 
@@ -160,6 +176,7 @@ public final class PropertyHandler {
         }
 
         setInt(key, value);
+
         return value;
     }
 
@@ -182,6 +199,7 @@ public final class PropertyHandler {
         }
 
         setDouble(key, value);
+
         return value;
     }
 
@@ -204,6 +222,7 @@ public final class PropertyHandler {
         }
 
         setLong(key, value);
+
         return value;
     }
 
@@ -226,6 +245,7 @@ public final class PropertyHandler {
         }
 
         setBoolean(key, value);
+
         return value;
     }
 
