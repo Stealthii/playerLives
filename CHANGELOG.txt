@@ -1,8 +1,9 @@
-1.7.1:
+1.7.1-SNAPSHOT:
  - Project code refactor
  - Updated for Bukkit 1.1
  - Removed Spout support
  - Fixed a bug with translations not being loaded properly
+ - Fixed console commands
 
 1.7:
  - Added localization (English only for now)
