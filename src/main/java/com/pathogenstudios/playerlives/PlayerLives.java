@@ -35,8 +35,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.List;
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Main class
 public class PlayerLives extends JavaPlugin {
     private DbWrapper         db                = null;
     private PermissionHandler permissionsPlugin = null;
@@ -49,7 +47,6 @@ public class PlayerLives extends JavaPlugin {
     // Inernal:
     private HashMap<Player, InventoryStore> invStore = new HashMap<Player, InventoryStore>();
 
-    // private HashMap<Player,GenericLabel> hudLabels = null;
     // Configuration and such:
     public ConfigMan    conf;
     private EconWrapper econ;
@@ -62,13 +59,16 @@ public class PlayerLives extends JavaPlugin {
         Log.pluginName = "pathogenPlayerLives";
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Enable / Disable:
     public void onEnable() {
         Log.m("Loading Pathogen playerLives...");
-        Log.verbose = true;    // Use Verbose until config is loaded so any pre-config verbose messages are still displayed for debugging purposes.
-        pluginMan = getServer().getPluginManager();
-        econ      = new EconWrapper();    // Dummy wrapper until a compatible econ plugin is detected.
+
+        // Use Verbose until config is loaded so any pre-config verbose messages
+        // are still displayed for debugging purposes.
+        Log.verbose = true;
+        pluginMan   = getServer().getPluginManager();
+
+        // Dummy wrapper until a compatible econ plugin is detected.
+        econ = new EconWrapper();
 
         // Make config folder if necessary...
         getDataFolder().mkdir();
@@ -113,8 +113,6 @@ public class PlayerLives extends JavaPlugin {
         Log.v("I'm not even angry...");
     }
 
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Event Callbacks:
     public void onDeath(EntityDeathEvent e) {
         Player player     = (Player) e.getEntity();
         String playerName = player.getName();
@@ -228,8 +226,6 @@ public class PlayerLives extends JavaPlugin {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Handle commands
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         boolean isPlayer;
@@ -249,8 +245,8 @@ public class PlayerLives extends JavaPlugin {
 
         String language = lang.getDefaultLanguage();
 
-        if (commandName.compareToIgnoreCase("lives") == 0)    // Check the current number of lives for a person... /lives [playername]
-        {
+        // Check the current number of lives for a person... /lives [playername]
+        if (commandName.compareToIgnoreCase("lives") == 0) {
             boolean useThirdPerson = false;
             String  targetName     = playerName;
 
@@ -373,7 +369,9 @@ public class PlayerLives extends JavaPlugin {
                 } catch (Exception e) {
                     sender.sendMessage(lang.get(language, "commandBuyNotNumber"));
 
-                    return false;    // << To avoid unexpected transactions, bail out. Use false so Bukkit will remind them of command usage.
+                    // To avoid unexpected transactions, bail out.
+                    // Use false so Bukkit will remind them of command usage.
+                    return false;
                 }
 
                 if (count < 1) {
@@ -450,8 +448,6 @@ public class PlayerLives extends JavaPlugin {
         return false;
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Util
     boolean checkPermission(Player player, String node) {
         node = node.toLowerCase();    // Just in case...
 
