@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pathogenstudios</groupId>
   <artifactId>playerLives</artifactId>
-  <version>1.7.1-SNAPSHOT</version>
+  <version>1.7.1</version>
   <name>playerLives</name>
   <description>PlayerLives is a lives plugin for CraftBukkit.</description>
   <properties>
