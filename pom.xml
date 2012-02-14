@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.pathogenstudios</groupId>
   <artifactId>playerLives</artifactId>
-  <version>1.7.1</version>
+  <version>1.7.2-SNAPSHOT</version>
   <name>playerLives</name>
   <description>PlayerLives is a lives plugin for CraftBukkit.</description>
   <properties>
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>org.bukkit</groupId>
       <artifactId>bukkit</artifactId>
-      <version>1.1-R3</version>
+      <version>1.1-R4</version>
     </dependency>
 
     <!-- BOSEconomy -->
